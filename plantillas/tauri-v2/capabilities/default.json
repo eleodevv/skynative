@@ -1,0 +1,11 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capacidad predeterminada de la ventana. No declara el campo 'remote', por lo que no se aplica al contenido remoto: la página web no recibe acceso al IPC ni a ninguna capacidad privilegiada.",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default"
+  ]
+}

@@ -1,0 +1,27 @@
+# {{.Nombre}}
+
+Aplicación de escritorio generada con [Skynative](https://github.com/skynative/skynative)
+a partir de Tauri v2.
+
+- URL remota: `{{.URL}}`
+- Identificador: `{{.Identificador}}`
+- Ventana inicial: {{.Ancho}}x{{.Alto}} píxeles
+
+## Compilar
+
+Requiere el toolchain de Rust y las dependencias de escritorio de Tauri v2.
+
+```bash
+cd src-tauri
+cargo tauri build
+```
+
+O abre Skynative (`skynative`), elige «Crear aplicación» para el mismo
+directorio o usa «Compilar» desde la pantalla de resultado del proyecto.
+
+## Ejecutar en modo desarrollo
+
+```bash
+cd src-tauri
+cargo tauri dev
+```

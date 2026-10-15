@@ -1,0 +1,7 @@
+# Artefactos de compilación de Rust y Tauri
+/src-tauri/target/
+/src-tauri/gen/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

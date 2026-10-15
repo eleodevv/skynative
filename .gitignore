@@ -1,0 +1,17 @@
+# Artefactos de compilación de Skynative
+/dist/
+/skynative
+/skynative.exe
+
+# Archivos de prueba de Go
+*.test
+*.out
+
+# Sistema operativo y editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Proyectos de ejemplo generados
+/ejemplos/

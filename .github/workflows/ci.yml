@@ -1,0 +1,39 @@
+name: Integración continua
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  verificar:
+    name: Verificar en ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+      - name: Instalar Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+      # Se usa bash en los tres sistemas para que los comandos sean idénticos.
+      - name: Formato (gofmt)
+        shell: bash
+        run: test -z "$(gofmt -l .)" || { echo "Archivos sin formatear:"; gofmt -l .; exit 1; }
+      - name: go vet
+        shell: bash
+        run: go vet ./...
+      - name: Pruebas
+        shell: bash
+        run: go test ./...
+      - name: Compilar el binario
+        shell: bash
+        run: go build ./cmd/skynative

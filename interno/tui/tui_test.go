@@ -1,0 +1,204 @@
+package tui
+
+import (
+	"bytes"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/skynative/skynative/interno/configuracion"
+)
+
+// TestProgramaArrancaYSale demuestra que el bucle de Bubble Tea se inicia y
+// termina al pulsar «q», sin necesidad de una terminal real.
+func TestProgramaArrancaYSale(t *testing.T) {
+	var salida bytes.Buffer
+	if err := ejecutarConEntradaSalida(strings.NewReader("q"), &salida); err != nil {
+		t.Fatalf("el programa no terminó correctamente: %v", err)
+	}
+	if !strings.Contains(salida.String(), "Skynative") {
+		t.Errorf("la salida no contenía el menú principal:\n%s", salida.String())
+	}
+}
+
+func runas(s string) tea.KeyMsg {
+	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)}
+}
+
+func tecla(tipo tea.KeyType) tea.KeyMsg {
+	return tea.KeyMsg{Type: tipo}
+}
+
+func aplicar(m Modelo, msg tea.Msg) Modelo {
+	actualizado, _ := m.Update(msg)
+	return actualizado.(Modelo)
+}
+
+func TestMenuNavegacion(t *testing.T) {
+	m := NuevoModelo()
+	if m.estado != estadoMenu {
+		t.Fatalf("el estado inicial debería ser el menú, es %v", m.estado)
+	}
+
+	m = aplicar(m, tecla(tea.KeyDown))
+	if m.opcionMenu != 1 {
+		t.Errorf("bajar debería poner la opción en 1, es %d", m.opcionMenu)
+	}
+
+	m = aplicar(m, runas("3"))
+	if m.opcionMenu != 2 {
+		t.Errorf("la tecla 3 debería seleccionar la opción 2, es %d", m.opcionMenu)
+	}
+
+	m = aplicar(m, tecla(tea.KeyUp))
+	if m.opcionMenu != 1 {
+		t.Errorf("subir debería poner la opción en 1, es %d", m.opcionMenu)
+	}
+}
+
+func TestOpcionVersionNoPermiteCompilar(t *testing.T) {
+	m := NuevoModelo()
+	m.opcionMenu = 3
+	m = aplicar(m, tecla(tea.KeyEnter))
+
+	if m.estado != estadoResultado {
+		t.Fatalf("debería mostrarse el resultado, estado = %v", m.estado)
+	}
+	if !strings.Contains(m.resumen, "Skynative") {
+		t.Errorf("el resumen debería mostrar la versión: %q", m.resumen)
+	}
+	if m.puedeCompilar {
+		t.Error("no debería ofrecerse compilar en la pantalla de versión")
+	}
+}
+
+func TestFormularioRechazaURLPeligrosa(t *testing.T) {
+	m := NuevoModelo()
+	m.estado = estadoFormulario
+	m.url.SetValue("javascript:alert(1)")
+	m.nombre.SetValue("Prueba")
+	m.carpeta = t.TempDir()
+
+	m, _ = m.lanzarGeneracion()
+
+	if m.mensajeError == "" {
+		t.Error("una URL con esquema peligroso debería producir un mensaje de error")
+	}
+	if m.estado != estadoFormulario {
+		t.Errorf("debería permanecer en el formulario, estado = %v", m.estado)
+	}
+}
+
+func TestFormularioValidaDimensiones(t *testing.T) {
+	m := NuevoModelo()
+	m.estado = estadoFormulario
+	m.url.SetValue("https://ejemplo.com")
+	m.nombre.SetValue("Prueba")
+	m.anchoCampo.SetValue("10") // por debajo del mínimo
+	m.carpeta = t.TempDir()
+
+	m, _ = m.lanzarGeneracion()
+	if m.mensajeError == "" {
+		t.Error("unas dimensiones fuera de rango deberían producir un error")
+	}
+}
+
+func TestFormularioEscVuelveAlMenu(t *testing.T) {
+	m := NuevoModelo()
+	m.estado = estadoFormulario
+	m = aplicar(m, tecla(tea.KeyEsc))
+	if m.estado != estadoMenu {
+		t.Errorf("Esc debería volver al menú, estado = %v", m.estado)
+	}
+}
+
+func TestFormularioTabRecorreCampos(t *testing.T) {
+	m := NuevoModelo()
+	m.estado = estadoFormulario
+	if m.campo != campoURL {
+		t.Fatalf("el campo inicial debería ser la URL, es %d", m.campo)
+	}
+	m = aplicar(m, tecla(tea.KeyTab))
+	if m.campo != campoNombre {
+		t.Errorf("Tab debería avanzar a Nombre, es %d", m.campo)
+	}
+	m = aplicar(m, tecla(tea.KeyShiftTab))
+	if m.campo != campoURL {
+		t.Errorf("Shift+Tab debería volver a la URL, es %d", m.campo)
+	}
+}
+
+// TestGeneracionExtremoAExtremo comprueba el flujo real: el formulario arranca
+// la generación y, al recibir el mensaje de resultado, el modelo pasa a la
+// pantalla de resultado con el proyecto en disco.
+func TestGeneracionExtremoAExtremo(t *testing.T) {
+	t.Setenv("SKYNATIVE_DIRECTORIO_CONFIG", t.TempDir())
+
+	carpeta := t.TempDir()
+	m := NuevoModelo()
+	m.estado = estadoFormulario
+	m.url.SetValue("https://ejemplo.com")
+	m.nombre.SetValue("Prueba TUI")
+	m.anchoCampo.SetValue("820")
+	m.altoCampo.SetValue("640")
+	m.carpeta = carpeta
+
+	m, _ = m.lanzarGeneracion()
+	if m.estado != estadoProgreso {
+		t.Fatalf("debería pasar a progreso, estado = %v (error: %s)", m.estado, m.mensajeError)
+	}
+	esperado := filepath.Join(carpeta, "prueba-tui")
+	if m.rutaProyecto != esperado {
+		t.Errorf("ruta = %q; se esperaba %q", m.rutaProyecto, esperado)
+	}
+
+	// Ejecución real del generador.
+	cfg := configuracion.Nueva("https://ejemplo.com", "Prueba TUI")
+	cfg.DirectorioSalida = carpeta
+	cfg.Ancho, cfg.Alto = 820, 640
+	mensaje := generarCmd(cfg)()
+	m = aplicar(m, mensaje)
+
+	if m.estado != estadoResultado {
+		t.Fatalf("debería pasar a resultado, estado = %v", m.estado)
+	}
+	if !m.exito {
+		t.Fatalf("la generación debería haber sido correcta: %s", m.resumen)
+	}
+	if _, err := os.Stat(filepath.Join(esperado, "src-tauri", "tauri.conf.json")); err != nil {
+		t.Errorf("no se creó tauri.conf.json: %v", err)
+	}
+	if !m.puedeCompilar {
+		t.Error("tras generar debería poderse compilar")
+	}
+}
+
+func TestVistasNoVacias(t *testing.T) {
+	estados := []estado{
+		estadoMenu, estadoFormulario, estadoExplorador,
+		estadoProgreso, estadoResultado, estadoLista, estadoDiagnostico,
+	}
+	for _, e := range estados {
+		m := NuevoModelo()
+		m.estado = e
+		m.explorador = nuevoExplorador(t.TempDir())
+		if strings.TrimSpace(m.View()) == "" {
+			t.Errorf("la vista del estado %v está vacía", e)
+		}
+	}
+}
+
+func TestEnteroPositivo(t *testing.T) {
+	if v, err := enteroPositivo("", 800); err != nil || v != 800 {
+		t.Errorf("valor vacío debería usar el predeterminado: %d, %v", v, err)
+	}
+	if v, err := enteroPositivo("1024", 800); err != nil || v != 1024 {
+		t.Errorf("valor numérico mal interpretado: %d, %v", v, err)
+	}
+	if _, err := enteroPositivo("abc", 800); err == nil {
+		t.Error("un valor no numérico debería fallar")
+	}
+}

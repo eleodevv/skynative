@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Skynative — convierte una URL en una app de escritorio</title>
+<meta name="description" content="Skynative convierte una URL web en una aplicación de escritorio con Tauri v2. Una herramienta en Go con interfaz de terminal." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='%230d0d0d'%3E%3Ccircle cx='5' cy='5' r='2.4'/%3E%3Ccircle cx='12' cy='5' r='2.4'/%3E%3Ccircle cx='19' cy='5' r='2.4'/%3E%3Ccircle cx='5' cy='12' r='2.4'/%3E%3Ccircle cx='19' cy='12' r='2.4'/%3E%3Ccircle cx='5' cy='19' r='2.4'/%3E%3Ccircle cx='12' cy='19' r='2.4'/%3E%3Ccircle cx='19' cy='19' r='2.4'/%3E%3C/g%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,350;9..144,400;9..144,500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --color-linen-canvas: #f7f5f3;
+    --color-ink-black: #0d0d0d;
+    --color-paper-white: #ffffff;
+    --color-stone: #6e6a69;
+    --color-pebble: #9a9796;
+
+    --font-display: 'Fraunces', 'GT Super', Georgia, ui-serif, serif;
+    --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+    --text-body: 16px;
+    --leading-body: 1.5;
+    --tracking-body: -0.18px;
+    --text-subheading: 18px;
+    --leading-subheading: 1.29;
+    --text-heading-sm: 24px;
+    --leading-heading-sm: 1.2;
+    --tracking-heading-sm: -0.48px;
+    --text-heading: 33px;
+    --leading-heading: 1.1;
+    --tracking-heading: -1.32px;
+    --text-heading-lg: 38px;
+    --leading-heading-lg: 1.08;
+    --tracking-heading-lg: -1.52px;
+    --text-display: 58px;
+    --leading-display: 1.06;
+    --tracking-display: -2.32px;
+    --text-display-xl: 74px;
+    --leading-display-xl: 0.86;
+    --tracking-display-xl: -3.7px;
+
+    --spacing-4: 4px;
+    --spacing-8: 8px;
+    --spacing-16: 16px;
+    --spacing-20: 20px;
+    --spacing-24: 24px;
+    --spacing-32: 32px;
+    --spacing-48: 48px;
+    --spacing-72: 72px;
+    --spacing-200: 200px;
+
+    --page-max-width: 1280px;
+    --section-gap: 80px;
+    --card-padding: 16px;
+    --element-gap: 24px;
+
+    --radius-tile: 12px;
+    --radius: 16px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--color-linen-canvas);
+    color: var(--color-ink-black);
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-size: var(--text-body);
+    line-height: var(--leading-body);
+    letter-spacing: var(--tracking-body);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  a { color: inherit; }
+
+  .wrap {
+    max-width: var(--page-max-width);
+    margin: 0 auto;
+    padding: 0 var(--spacing-24);
+  }
+
+  /* ---------- Nav pill ---------- */
+  .nav {
+    position: sticky;
+    top: var(--spacing-24);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-16);
+    max-width: var(--page-max-width);
+    margin: var(--spacing-24) auto 0;
+    padding: var(--spacing-8) var(--spacing-8) var(--spacing-8) var(--spacing-20);
+    background: var(--color-paper-white);
+    border: 1px solid rgba(13, 13, 13, 0.10);
+    border-radius: 9999px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-8);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    font-size: 17px;
+    text-decoration: none;
+  }
+  .brand svg { width: 18px; height: 18px; display: block; }
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-24);
+    margin-left: var(--spacing-8);
+  }
+  .nav-links a {
+    text-decoration: none;
+    color: var(--color-stone);
+    font-size: 15px;
+    font-weight: 400;
+    transition: color .15s ease;
+  }
+  .nav-links a:hover { color: var(--color-ink-black); }
+  .nav-search {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-8);
+    color: var(--color-stone);
+    font-size: 15px;
+    padding: 0 var(--spacing-16);
+  }
+  .nav-search input {
+    border: 0;
+    background: transparent;
+    width: 100%;
+    font-family: inherit;
+    font-size: 16px;
+    letter-spacing: var(--tracking-body);
+    color: var(--color-ink-black);
+    outline: none;
+  }
+  .nav-search input::placeholder { color: var(--color-stone); }
+  .nav-actions { display: flex; align-items: center; gap: var(--spacing-8); }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-8);
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    padding: 14px var(--spacing-24);
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    text-decoration: none;
+    cursor: pointer;
+    transition: opacity .15s ease, background .15s ease;
+    white-space: nowrap;
+  }
+  .btn-primary { background: var(--color-ink-black); color: var(--color-paper-white); }
+  .btn-primary:hover { opacity: .88; }
+  .btn-secondary {
+    background: var(--color-paper-white);
+    color: var(--color-ink-black);
+    border-color: rgba(13, 13, 13, 0.15);
+  }
+  .btn-secondary:hover { background: #fbfaf9; }
+  .btn-sm { padding: 9px var(--spacing-16); font-size: 15px; border-radius: 9999px; }
+  .icon-btn {
+    width: 32px; height: 32px;
+    display: grid; place-items: center;
+    border-radius: 9999px;
+    color: var(--color-stone);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+  }
+  .icon-btn:hover { background: rgba(13,13,13,.06); color: var(--color-ink-black); }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative;
+    text-align: center;
+    padding: var(--spacing-200) 0 var(--spacing-72);
+    min-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .eyebrow {
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink-black);
+    margin-bottom: var(--spacing-24);
+  }
+  .hero h1 {
+    margin: 0;
+    max-width: 16ch;
+    font-size: clamp(44px, 7vw, var(--text-display-xl));
+    font-weight: 350;
+    line-height: var(--leading-display-xl);
+    letter-spacing: var(--tracking-display-xl);
+  }
+  .hero p {
+    max-width: 46ch;
+    margin: var(--spacing-32) auto 0;
+    color: var(--color-stone);
+    font-size: var(--text-subheading);
+    line-height: var(--leading-subheading);
+  }
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-16);
+    margin-top: var(--spacing-40);
+  }
+
+  /* Floating polaroid tiles */
+  .tile {
+    position: absolute;
+    border-radius: var(--radius-tile);
+    background-size: cover;
+    background-position: center;
+    pointer-events: none;
+  }
+  .tile.t1 { width: 116px; height: 116px; top: 12%;  left: 4%;  transform: rotate(-5deg);  background: #c0453c; }
+  .tile.t2 { width: 96px;  height: 96px;  top: 30%;  left: 13%; transform: rotate(4deg);
+    background: linear-gradient(135deg, #b06a4a 0%, #2f3b46 100%); }
+  .tile.t3 { width: 132px; height: 132px; top: 8%;   right: 5%; transform: rotate(6deg);  background: #6d5b8c; }
+  .tile.t4 { width: 84px;  height: 84px;  top: 36%;  right: 14%; transform: rotate(-4deg); background: #c9a24b; }
+  .tile.t5 { width: 76px;  height: 76px;  bottom: 6%; left: 8%; transform: rotate(7deg);  background: #4f6f52; }
+  .tile.t6 { width: 104px; height: 104px; bottom: 2%; right: 9%; transform: rotate(-6deg); background: #8a5a44; }
+
+  @media (max-width: 1080px) {
+    .tile.t2, .tile.t4, .tile.t5 { display: none; }
+  }
+  @media (max-width: 720px) {
+    .tile { display: none; }
+    .nav-links, .nav-search { display: none; }
+  }
+
+  /* ---------- Install ---------- */
+  .install {
+    background: var(--color-paper-white);
+    border: 1px solid rgba(13, 13, 13, 0.08);
+    border-radius: var(--radius);
+    padding: var(--spacing-24);
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  .install-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-16);
+    margin-bottom: var(--spacing-16);
+  }
+  .install-head h2 {
+    margin: 0;
+    font-size: var(--text-heading-sm);
+    font-weight: 500;
+    line-height: var(--leading-heading-sm);
+    letter-spacing: var(--tracking-heading-sm);
+  }
+  .code {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-16);
+    background: var(--color-linen-canvas);
+    border: 1px solid rgba(13, 13, 13, 0.08);
+    border-radius: var(--radius);
+    padding: 14px var(--spacing-16);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    letter-spacing: 0;
+    overflow-x: auto;
+  }
+  .code .prompt { color: var(--color-pebble); user-select: none; }
+  .code code { white-space: nowrap; }
+  .code + .code { margin-top: var(--spacing-8); }
+  .copy {
+    margin-left: auto;
+    flex: none;
+  }
+  .install-note {
+    margin: var(--spacing-16) 0 0;
+    color: var(--color-stone);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .install-note code {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    background: var(--color-linen-canvas);
+    border-radius: 6px;
+    padding: 1px 6px;
+  }
+
+  /* ---------- Features ---------- */
+  .section { padding: var(--section-gap) 0; }
+  .section-title {
+    font-size: var(--text-heading);
+    font-weight: 350;
+    letter-spacing: var(--tracking-heading);
+    line-height: var(--leading-heading);
+    margin: 0 0 var(--spacing-40);
+    max-width: 20ch;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--element-gap);
+  }
+  @media (max-width: 860px) { .grid-3 { grid-template-columns: 1fr; } }
+
+  .card { display: block; text-decoration: none; }
+  .card .thumb {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border-radius: var(--radius);
+    background-size: cover;
+    background-position: center;
+  }
+  .card .thumb.g1 { background: linear-gradient(150deg, #b8433a 0%, #e0c3a0 100%); }
+  .card .thumb.g2 { background: linear-gradient(150deg, #d9c3a5 0%, #8a5a44 100%); }
+  .card .thumb.g3 { background: linear-gradient(150deg, #4b3f63 0%, #9a8fb0 100%); }
+  .card .label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--spacing-16);
+    margin-top: var(--spacing-16);
+    font-size: var(--text-subheading);
+    font-weight: 400;
+    color: var(--color-ink-black);
+  }
+  .card .label span.desc {
+    font-size: 14px;
+    color: var(--color-stone);
+    line-height: 1.45;
+    text-align: right;
+    max-width: 22ch;
+  }
+
+  /* ---------- Video-ish band ---------- */
+  .band {
+    position: relative;
+    border-radius: var(--radius);
+    min-height: 340px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: linear-gradient(160deg, #35463b 0%, #1c2a24 60%, #0d0d0d 100%);
+  }
+  .band .dots {
+    display: grid;
+    grid-template-columns: repeat(3, 12px);
+    gap: 10px;
+    opacity: .6;
+  }
+  .band .dots i { width: 12px; height: 12px; border-radius: 50%; background: #fff; }
+  .band .dots i:nth-child(5) { visibility: hidden; }
+  .band .split {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--spacing-48);
+    color: #fff;
+  }
+  .band .split b {
+    font-size: clamp(26px, 4vw, var(--text-heading-lg));
+    font-weight: 350;
+    letter-spacing: var(--tracking-heading-lg);
+  }
+  .band .caption {
+    position: absolute;
+    bottom: var(--spacing-24);
+    color: rgba(255,255,255,.7);
+    font-size: 14px;
+  }
+
+  /* ---------- Footer ---------- */
+  footer {
+    border-top: 1px solid rgba(13, 13, 13, 0.08);
+    padding: var(--spacing-48) 0;
+    margin-top: var(--spacing-72);
+  }
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-16);
+    color: var(--color-stone);
+    font-size: 14px;
+  }
+  .foot a { color: var(--color-stone); text-decoration: none; }
+  .foot a:hover { color: var(--color-ink-black); }
+  .foot .links { display: flex; gap: var(--spacing-24); }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="brand" href="#top">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><g fill="#0d0d0d">
+      <circle cx="4.5" cy="4.5" r="2.3"/><circle cx="12" cy="4.5" r="2.3"/><circle cx="19.5" cy="4.5" r="2.3"/>
+      <circle cx="4.5" cy="12" r="2.3"/><circle cx="19.5" cy="12" r="2.3"/>
+      <circle cx="4.5" cy="19.5" r="2.3"/><circle cx="12" cy="19.5" r="2.3"/><circle cx="19.5" cy="19.5" r="2.3"/>
+    </g></svg>
+    Skynative
+  </a>
+  <div class="nav-links">
+    <a href="#descargar">Descargar</a>
+    <a href="#caracteristicas">Características</a>
+    <a href="https://github.com/eleodevv/skynative">GitHub</a>
+  </div>
+  <div class="nav-search">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    <input type="text" placeholder="Buscar Skynative…" aria-label="Buscar" />
+  </div>
+  <div class="nav-actions">
+    <button class="icon-btn" type="button" title="Tema claro" aria-label="Tema">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.5 4.5l1.4 1.4M18.1 18.1l1.4 1.4M2 12h2M20 12h2M4.5 19.5l1.4-1.4M18.1 5.9l1.4-1.4"/></svg>
+    </button>
+    <a class="btn btn-secondary btn-sm" href="https://github.com/eleodevv/skynative">Iniciar sesión</a>
+  </div>
+</nav>
+
+<main id="top" class="wrap">
+
+  <header class="hero">
+    <span class="tile t1" aria-hidden="true"></span>
+    <span class="tile t2" aria-hidden="true"></span>
+    <span class="tile t3" aria-hidden="true"></span>
+    <span class="tile t4" aria-hidden="true"></span>
+    <span class="tile t5" aria-hidden="true"></span>
+    <span class="tile t6" aria-hidden="true"></span>
+
+    <p class="eyebrow">Skynative</p>
+    <h1>Convierte una URL en una aplicación de escritorio.</h1>
+    <p>Una herramienta en Go con interfaz de terminal que envuelve cualquier web en una ventana nativa con Tauri v2. Sin plantillas manuales, sin código privilegiado.</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="#descargar">Descargar</a>
+      <a class="btn btn-secondary" href="https://github.com/eleodevv/skynative">Ver en GitHub</a>
+    </div>
+  </header>
+
+  <section id="descargar" class="section">
+    <div class="install">
+      <div class="install-head">
+        <h2>Instalar</h2>
+        <span class="eyebrow" style="margin:0; font-size:13px;">Linux · macOS · Windows</span>
+      </div>
+
+      <div class="code">
+        <span class="prompt">$</span>
+        <code id="cmd-unix">curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/install.sh | sh</code>
+        <button class="btn btn-primary btn-sm copy" type="button" data-copy="#cmd-unix">Copiar</button>
+      </div>
+
+      <div class="code">
+        <span class="prompt">PS&gt;</span>
+        <code id="cmd-win">irm https://github.com/eleodevv/skynative/releases/latest/download/install.ps1 | iex</code>
+        <button class="btn btn-secondary btn-sm copy" type="button" data-copy="#cmd-win">Copiar</button>
+      </div>
+
+      <p class="install-note">
+        Los instaladores detectan el sistema y la arquitectura, verifican el checksum
+        SHA-256 antes de instalar y no requieren privilegios de administrador.
+        También puedes compilarlo desde el código fuente:
+      </p>
+
+      <div class="code">
+        <span class="prompt">$</span>
+        <code id="cmd-src">git clone https://github.com/eleodevv/skynative.git &amp;&amp; cd skynative &amp;&amp; make compilar-local</code>
+        <button class="btn btn-secondary btn-sm copy" type="button" data-copy="#cmd-src">Copiar</button>
+      </div>
+
+      <p class="install-note">
+        Tras instalar, abre Skynative escribiendo <code>skynative</code> en la terminal.
+        La interfaz se abre sin argumentos; <code>skynative --help</code> muestra la ayuda.
+      </p>
+    </div>
+  </section>
+
+  <section id="caracteristicas" class="section">
+    <h2 class="section-title">Todo lo demás es una imagen, un título y poco más.</h2>
+    <div class="grid-3">
+      <a class="card" href="https://github.com/eleodevv/skynative#readme">
+        <div class="thumb g1"></div>
+        <div class="label">
+          <span>Una URL, una app</span>
+          <span class="desc">Genera el proyecto Tauri v2 completo con un formulario guiado.</span>
+        </div>
+      </a>
+      <a class="card" href="https://github.com/eleodevv/skynative#readme">
+        <div class="thumb g2"></div>
+        <div class="label">
+          <span>Explorador integrado</span>
+          <span class="desc">Elige la carpeta de salida sin salir de la terminal.</span>
+        </div>
+      </a>
+      <a class="card" href="https://github.com/eleodevv/skynative#readme">
+        <div class="thumb g3"></div>
+        <div class="label">
+          <span>Sin código privilegiado</span>
+          <span class="desc">Rechaza esquemas peligrosos y no expone comandos Tauri a la web.</span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="band">
+      <div class="dots" aria-hidden="true">
+        <i></i><i></i><i></i>
+        <i></i><i></i><i></i>
+        <i></i><i></i><i></i>
+      </div>
+      <div class="split"><b>Construye</b><b>en local</b></div>
+      <span class="caption">skynative · interfaz de terminal</span>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>Skynative — licencia MIT. Hecho con Go y Tauri v2.</span>
+    <span class="links">
+      <a href="https://github.com/eleodevv/skynative">Repositorio</a>
+      <a href="https://github.com/eleodevv/skynative/releases">Releases</a>
+      <a href="https://v2.tauri.app/">Tauri v2</a>
+    </span>
+  </div>
+</footer>
+
+<script>
+  document.querySelectorAll('.copy').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var target = document.querySelector(btn.getAttribute('data-copy'));
+      if (!target) return;
+      var texto = target.textContent.trim();
+      var done = function () {
+        var original = btn.textContent;
+        btn.textContent = 'Copiado';
+        setTimeout(function () { btn.textContent = original; }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texto).then(done, done);
+      } else {
+        var rango = document.createRange();
+        rango.selectNodeContents(target);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(rango);
+        try { document.execCommand('copy'); } catch (e) {}
+        sel.removeAllRanges();
+        done();
+      }
+    });
+  });
+</script>
+</body>
+</html>
