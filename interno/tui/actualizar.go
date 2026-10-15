@@ -10,6 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/skynative/skynative/interno/configuracion"
+	"github.com/skynative/skynative/interno/instalador"
 	"github.com/skynative/skynative/interno/version"
 )
 
@@ -48,6 +49,8 @@ func (m Modelo) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case msgCompilado:
 		return m.actualizarCompilado(msg)
+	case msgInstalado:
+		return m.actualizarInstalado(msg)
 	case msgDiagnostico:
 		m.diagnosticos = msg
 		m.estado = estadoDiagnostico
@@ -254,6 +257,12 @@ func (m Modelo) actualizarProgreso(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.estado = estadoResultado
 			m.trabajando = false
 			m.compilandoAhora = false
+			return m, nil
+		}
+		if m.instalandoAhora {
+			m.trabajando = false
+			m.instalandoAhora = false
+			m.estado = estadoResultado
 		}
 		return m, nil
 	}
@@ -277,6 +286,10 @@ func (m Modelo) actualizarResultado(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "c":
 		if m.exito && m.puedeCompilar && m.rutaProyecto != "" {
 			return m.iniciarCompilacion()
+		}
+	case "i":
+		if m.exito && m.puedeInstalar && !m.instalado && m.rutaProyecto != "" {
+			return m.iniciarInstalacion()
 		}
 	}
 	return m, nil
@@ -312,6 +325,12 @@ func (m Modelo) lanzarGeneracion() (Modelo, tea.Cmd) {
 	}
 
 	m.mensajeError = ""
+	m.cfg = cfg
+	m.rutaEjecutable = ""
+	m.bundleApp = ""
+	m.puedeInstalar = false
+	m.instalado = false
+	m.entradaEscritorio = ""
 	m.rutaProyecto = filepath.Join(cfg.DirectorioSalida, cfg.NombrePaquete)
 	m.estado = estadoProgreso
 	m.trabajando = true
@@ -332,12 +351,37 @@ func (m Modelo) iniciarCompilacion() (Modelo, tea.Cmd) {
 	m.estado = estadoProgreso
 	m.trabajando = true
 	m.compilandoAhora = true
+	m.instalandoAhora = false
+	m.instalado = false
+	m.entradaEscritorio = ""
+	m.puedeInstalar = false
 	m.girador = nuevoGirador()
 	return m, tea.Batch(
 		m.girador.Tick,
 		escucharLog(m.canalLog),
 		compilarCmd(ctx, m.rutaProyecto, m.canalLog),
 	)
+}
+
+// iniciarInstalacion registra la aplicación compilada en el sistema.
+func (m Modelo) iniciarInstalacion() (Modelo, tea.Cmd) {
+	m.estado = estadoProgreso
+	m.trabajando = true
+	m.instalandoAhora = true
+	m.compilandoAhora = false
+	m.lineas = []string{"Instalando «" + m.cfg.Nombre + "» en el menú de aplicaciones…"}
+	m.registro.SetContent(strings.Join(m.lineas, "\n"))
+	m.girador = nuevoGirador()
+
+	op := instalador.Opciones{
+		Nombre:      m.cfg.Nombre,
+		Slug:        m.cfg.NombrePaquete,
+		Comentario:  "Aplicación de escritorio creada con Skynative",
+		Ejecutable:  m.rutaEjecutable,
+		IconoOrigen: filepath.Join(m.rutaProyecto, "src-tauri", "icons", "128x128.png"),
+		BundleApp:   m.bundleApp,
+	}
+	return m, tea.Batch(m.girador.Tick, instalarCmd(op))
 }
 
 // actualizarGenerado procesa el fin de la generación.
@@ -377,10 +421,37 @@ func (m Modelo) actualizarCompilado(msg msgCompilado) (tea.Model, tea.Cmd) {
 	m.exito = true
 	m.puedeCompilar = false
 	m.artefactos = msg.res.Artefactos
+	m.rutaEjecutable = detectarEjecutable(m.cfg, m.rutaProyecto, msg.res.Artefactos)
+	m.bundleApp = detectarBundle(msg.res.Artefactos)
+	m.puedeInstalar = m.rutaEjecutable != "" || m.bundleApp != ""
 	if len(msg.res.Artefactos) == 0 {
 		m.resumen = "Compilación terminada, pero no se encontraron artefactos."
 	} else {
 		m.resumen = fmt.Sprintf("Compilación terminada. %d artefacto(s) generados.", len(msg.res.Artefactos))
+	}
+	m.estado = estadoResultado
+	return m, nil
+}
+
+// actualizarInstalado procesa el fin de la instalación en el sistema.
+func (m Modelo) actualizarInstalado(msg msgInstalado) (tea.Model, tea.Cmd) {
+	m.trabajando = false
+	m.instalandoAhora = false
+	if msg.err != nil {
+		m.exito = false
+		m.puedeInstalar = m.rutaEjecutable != "" || m.bundleApp != ""
+		m.resumen = "No se pudo instalar la aplicación: " + msg.err.Error()
+		m.estado = estadoResultado
+		return m, nil
+	}
+	m.exito = true
+	m.instalado = true
+	m.puedeInstalar = false
+	m.entradaEscritorio = msg.res.Entrada
+	if msg.res.Mensaje != "" {
+		m.resumen = msg.res.Mensaje
+	} else {
+		m.resumen = "Aplicación instalada. Búscala en tus aplicaciones y ábrela con doble clic."
 	}
 	m.estado = estadoResultado
 	return m, nil

@@ -93,6 +93,15 @@ type Modelo struct {
 	artefactos    []string
 	puedeCompilar bool
 
+	// Instalación en el sistema (entrada de menú + icono)
+	cfg               configuracion.Configuracion
+	rutaEjecutable    string
+	bundleApp         string
+	puedeInstalar     bool
+	instalandoAhora   bool
+	instalado         bool
+	entradaEscritorio string
+
 	// Listas
 	diagnosticos []diagnostico.Estado
 	proyectos    []proyectos.Proyecto

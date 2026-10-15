@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -19,8 +20,64 @@ func TestProgramaArrancaYSale(t *testing.T) {
 	if err := ejecutarConEntradaSalida(strings.NewReader("q"), &salida); err != nil {
 		t.Fatalf("el programa no terminó correctamente: %v", err)
 	}
-	if !strings.Contains(salida.String(), "Skynative") {
+	if !strings.Contains(salida.String(), "Crear aplicación") {
 		t.Errorf("la salida no contenía el menú principal:\n%s", salida.String())
+	}
+}
+
+// TestInstalarTrasCompilar comprueba que, con un ejecutable y un icono listos,
+// la instalación crea la entrada de menú del sistema.
+func TestInstalarTrasCompilar(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("la instalación directa a prueba se valida en Linux")
+	}
+	datos := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", datos)
+
+	proyecto := t.TempDir()
+	exe := filepath.Join(proyecto, "src-tauri", "target", "release", "prueba")
+	if err := os.MkdirAll(filepath.Dir(exe), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(exe, []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	icono := filepath.Join(proyecto, "src-tauri", "icons", "128x128.png")
+	if err := os.MkdirAll(filepath.Dir(icono), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(icono, []byte("PNG"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	m := NuevoModelo()
+	m.cfg = configuracion.Nueva("https://ejemplo.com", "Prueba")
+	m.cfg.Normalizar()
+	m.rutaProyecto = proyecto
+	m.rutaEjecutable = exe
+	m.exito = true
+	m.puedeInstalar = true
+
+	m, cmd := m.iniciarInstalacion()
+	if m.estado != estadoProgreso || !m.instalandoAhora {
+		t.Fatalf("no se inició la instalación, estado = %v", m.estado)
+	}
+	var mensaje tea.Msg
+	for _, candidato := range desglosar(cmd) {
+		if _, ok := candidato.(msgInstalado); ok {
+			mensaje = candidato
+		}
+	}
+	if mensaje == nil {
+		t.Fatal("no se generó el mensaje de instalación")
+	}
+	m = aplicar(m, mensaje)
+
+	if !m.instalado || m.estado != estadoResultado {
+		t.Fatalf("no se marcó como instalada: instalado=%v estado=%v (%s)", m.instalado, m.estado, m.resumen)
+	}
+	if _, err := os.Stat(m.entradaEscritorio); err != nil {
+		t.Errorf("no se creó la entrada .desktop: %v", err)
 	}
 }
 
@@ -35,6 +92,23 @@ func tecla(tipo tea.KeyType) tea.KeyMsg {
 func aplicar(m Modelo, msg tea.Msg) Modelo {
 	actualizado, _ := m.Update(msg)
 	return actualizado.(Modelo)
+}
+
+// desglosar ejecuta un comando y devuelve todos los mensajes que produce,
+// aplanando los lotes que genera tea.Batch.
+func desglosar(cmd tea.Cmd) []tea.Msg {
+	if cmd == nil {
+		return nil
+	}
+	msg := cmd()
+	if lote, ok := msg.(tea.BatchMsg); ok {
+		var mensajes []tea.Msg
+		for _, sub := range lote {
+			mensajes = append(mensajes, desglosar(sub)...)
+		}
+		return mensajes
+	}
+	return []tea.Msg{msg}
 }
 
 func TestMenuNavegacion(t *testing.T) {

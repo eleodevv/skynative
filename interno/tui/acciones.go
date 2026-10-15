@@ -2,7 +2,9 @@ package tui
 
 import (
 	"context"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/skynative/skynative/interno/configuracion"
 	"github.com/skynative/skynative/interno/diagnostico"
 	"github.com/skynative/skynative/interno/generador"
+	"github.com/skynative/skynative/interno/instalador"
 	"github.com/skynative/skynative/interno/proyectos"
 )
 
@@ -25,6 +28,10 @@ type (
 	msgLogCerrado struct{}
 	msgCompilado  struct {
 		res compilador.Resultado
+		err error
+	}
+	msgInstalado struct {
+		res instalador.Resultado
 		err error
 	}
 	msgDiagnostico []diagnostico.Estado
@@ -59,6 +66,47 @@ func compilarCmd(ctx context.Context, ruta string, canal chan string) tea.Cmd {
 		close(canal)
 		return msgCompilado{res: res, err: err}
 	}
+}
+
+// instalarCmd registra la aplicación compilada en el menú del sistema para que
+// pueda abrirse con doble clic.
+func instalarCmd(op instalador.Opciones) tea.Cmd {
+	return func() tea.Msg {
+		res, err := instalador.Instalar(op)
+		return msgInstalado{res: res, err: err}
+	}
+}
+
+// detectarEjecutable localiza el binario principal compilado del proyecto.
+func detectarEjecutable(cfg configuracion.Configuracion, rutaProyecto string, artefactos []string) string {
+	if rutaProyecto == "" || cfg.NombrePaquete == "" {
+		return ""
+	}
+	nombre := cfg.NombrePaquete
+	if runtime.GOOS == "windows" {
+		nombre += ".exe"
+	}
+	candidato := filepath.Join(rutaProyecto, "src-tauri", "target", "release", nombre)
+	if info, err := os.Stat(candidato); err == nil && !info.IsDir() {
+		return candidato
+	}
+	// Alternativa: un AppImage ya ejecutable.
+	for _, a := range artefactos {
+		if strings.EqualFold(filepath.Ext(a), ".appimage") {
+			return a
+		}
+	}
+	return ""
+}
+
+// detectarBundle localiza un paquete .app de macOS entre los artefactos.
+func detectarBundle(artefactos []string) string {
+	for _, a := range artefactos {
+		if strings.EqualFold(filepath.Ext(a), ".app") {
+			return a
+		}
+	}
+	return ""
 }
 
 // escucharLog lee una línea del canal de la compilación.

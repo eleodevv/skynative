@@ -12,9 +12,15 @@ var (
 	estiloCorrecto  = lipgloss.NewStyle().Foreground(lipgloss.Color("42"))
 	estiloAviso     = lipgloss.NewStyle().Foreground(lipgloss.Color("214"))
 	estiloFoco      = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229"))
-	estiloSeleccion = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).Background(lipgloss.Color("24"))
+	estiloSeleccion = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("231")).Background(lipgloss.Color("99"))
 	estiloRuta      = lipgloss.NewStyle().Foreground(lipgloss.Color("150"))
 	estiloCaja      = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1)
+	estiloMarca     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("212"))
+	estiloPanel     = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("240")).
+			Padding(1, 3)
+	estiloEtiquetaCampo = lipgloss.NewStyle().Foreground(lipgloss.Color("246"))
 )
 
 // casilla dibuja una casilla de verificación.

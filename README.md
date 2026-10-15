@@ -61,6 +61,7 @@ skynative/
 │   ├── configuracion/           Modelo de datos y validación de entradas
 │   ├── generador/               Creación del proyecto Tauri v2 y de los iconos
 │   ├── compilador/              Ejecución de la CLI de Tauri y descubrimiento de artefactos
+│   ├── instalador/              Registro de la app compilada en el menú del sistema
 │   ├── diagnostico/             Comprobación de Go, Rust, Cargo, Tauri y dependencias
 │   ├── proyectos/               Registro local de aplicaciones generadas
 │   └── version/                 Versión y metadatos del binario
@@ -86,6 +87,9 @@ skynative/
 5. `proyectos` registra la aplicación.
 6. Opcionalmente, `compilador.Compilar` lanza `cargo tauri build` y busca los
    paquetes resultantes; la salida se muestra en la pantalla de progreso.
+7. Tras compilar, `instalador.Instalar` registra la app en el sistema (entrada
+   `.desktop` e icono en Linux, copia a `~/Applications` en macOS) para poder
+   abrirla con doble clic y encontrarla al buscar.
 
 ### Decisiones de diseño
 
@@ -232,9 +236,9 @@ skynative --version   # versión instalada
 | Formulario | `Tab`/`Shift+Tab` o `↑`/`↓` moverse · `Enter` abrir el explorador en «Carpeta» o crear en «Crear aplicación» · `Espacio` alternar la casilla · `Ctrl+G` crear · `Esc` volver |
 | Explorador | `↑`/`↓` moverse · `Enter` entrar o elegir · `S` usar la carpeta actual · `Retroceso` subir · `Inicio` ir al perfil · `Esc` cancelar |
 | Progreso | `↑`/`↓` desplazar la salida · `Esc` cancelar |
-| Resultado | `C` compilar · `O` abrir la carpeta · `Enter` crear otra · `Esc` volver al menú |
+| Resultado | `C` compilar · `I` instalar en el sistema · `O` abrir la carpeta · `Enter` crear otra · `Esc` volver al menú |
 
-### Cómo crear y compilar una aplicación
+### Cómo crear, compilar e instalar una aplicación
 
 1. Elige **Crear aplicación** en el menú.
 2. Rellena la URL (solo `http`/`https`), el nombre, el ancho, el alto y la
@@ -245,6 +249,16 @@ skynative --version   # versión instalada
 5. En la pantalla de resultado pulsa `C` para compilar. Los artefactos
    aparecen en `<proyecto>/src-tauri/target/release/bundle/` (y el ejecutable
    en `<proyecto>/src-tauri/target/release/`).
+6. Pulsa `I` para instalar la app en el sistema. Skynative copia el icono y
+   crea el lanzador con el que podrás **abrirla con doble clic** y
+   **encontrarla al buscar** en tus aplicaciones:
+   - **Linux:** entrada `.desktop` en `~/.local/share/applications/` e icono en
+     `~/.local/share/icons/hicolor/256x256/apps/`.
+   - **macOS:** copia del paquete `.app` a `~/Applications`.
+   - **Windows:** instala el `.msi` o el `.exe` que genera Tauri.
+
+La instalación no requiere privilegios de administrador: todo va al perfil del
+usuario.
 
 También puedes compilar sin Skynative:
 
@@ -386,13 +400,16 @@ La aplicación generada carga la URL remota en la WebView del sistema
   configuración de Tauri.
 - **`interno/compilador`** — `Compilar` lanza la CLI de Tauri;
   `BuscarArtefactos` localiza los paquetes y el binario.
+- **`interno/instalador`** — `Instalar` registra la app compilada en el menú del
+  sistema: entrada `.desktop` e icono (Linux) o copia del `.app` (macOS).
 - **`interno/diagnostico`** — `Ejecutar` comprueba Go, Rust, Cargo, la CLI de
   Tauri y las dependencias por plataforma.
 - **`interno/proyectos`** — registro JSON en el directorio de configuración del
   usuario (`SKYNATIVE_DIRECTORIO_CONFIG` lo sobrescribe).
 - **`interno/tui`** — interfaz de terminal: `modelo.go` (estado), `vistas.go`
-  (render con Lip Gloss), `actualizar.go` (`Update`), `acciones.go` (comandos y
-  mensajes), `explorador.go` (selector de carpetas) y `estilos.go`.
+  (render con Lip Gloss), `logo.go` (logotipo centrado), `actualizar.go`
+  (`Update`), `acciones.go` (comandos y mensajes), `explorador.go` (selector de
+  carpetas) y `estilos.go`.
 - **`plantillas`** — archivos de Tauri incrustados con `go:embed`.
 
 ### Convenciones
