@@ -111,3 +111,66 @@ func TestInstalarLinuxSinEjecutable(t *testing.T) {
 		t.Error("debería fallar sin ejecutable")
 	}
 }
+
+func TestNombreArchivoWindows(t *testing.T) {
+	casos := map[string]string{
+		"Mi App":        "Mi App",
+		`a/b\c:d*e?f"g`: "abcdefg",
+		"  bordes  ":    "bordes",
+	}
+	for entrada, esperado := range casos {
+		if obtenido := nombreArchivoWindows(entrada); obtenido != esperado {
+			t.Errorf("nombreArchivoWindows(%q) = %q; se esperaba %q", entrada, obtenido, esperado)
+		}
+	}
+}
+
+func TestScriptAccesoDirecto(t *testing.T) {
+	script := scriptAccesoDirecto(Opciones{
+		Nombre:     "Mi App",
+		Ejecutable: `C:\Program Files\Mi App\app.exe`,
+		IconoICO:   `C:\Program Files\Mi App\icon.ico`,
+	}, `C:\Menu\Mi App.lnk`)
+
+	for _, esperado := range []string{
+		"WScript.Shell",
+		`CreateShortcut('C:\Menu\Mi App.lnk')`,
+		`TargetPath = 'C:\Program Files\Mi App\app.exe'`,
+		`IconLocation = 'C:\Program Files\Mi App\icon.ico'`,
+		"$s.Save()",
+	} {
+		if !strings.Contains(script, esperado) {
+			t.Errorf("el guion no contiene %q:\n%s", esperado, script)
+		}
+	}
+}
+
+// TestInstalarWindows crea un acceso directo real mediante PowerShell en el
+// menú Inicio indicado y comprueba que el archivo .lnk se genera.
+func TestInstalarWindows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("la creación de accesos directos solo aplica a Windows")
+	}
+	base := t.TempDir()
+	exe := filepath.Join(base, "miapp.exe")
+	if err := os.WriteFile(exe, []byte("MZ"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	menu := filepath.Join(base, "MenuInicio")
+
+	res, err := instalarWindows(Opciones{
+		Nombre:         "Mi App",
+		Slug:           "mi-app",
+		Ejecutable:     exe,
+		DirectorioMenu: menu,
+	})
+	if err != nil {
+		t.Fatalf("instalarWindows devolvió error: %v", err)
+	}
+	if _, err := os.Stat(res.Entrada); err != nil {
+		t.Errorf("no se creó el acceso directo %q: %v", res.Entrada, err)
+	}
+	if !strings.HasSuffix(res.Entrada, "Mi App.lnk") {
+		t.Errorf("nombre de acceso directo inesperado: %q", res.Entrada)
+	}
+}

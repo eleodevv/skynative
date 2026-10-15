@@ -255,7 +255,9 @@ skynative --version   # versión instalada
    - **Linux:** entrada `.desktop` en `~/.local/share/applications/` e icono en
      `~/.local/share/icons/hicolor/256x256/apps/`.
    - **macOS:** copia del paquete `.app` a `~/Applications`.
-   - **Windows:** instala el `.msi` o el `.exe` que genera Tauri.
+   - **Windows:** acceso directo `.lnk` en el menú Inicio (creado con
+     PowerShell, con el icono de la app). También puedes usar el `.msi` o el
+     `.exe` que genera Tauri.
 
 La instalación no requiere privilegios de administrador: todo va al perfil del
 usuario.

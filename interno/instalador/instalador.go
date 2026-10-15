@@ -27,12 +27,16 @@ type Opciones struct {
 	Comentario string
 	// Ejecutable es la ruta absoluta del binario compilado (Linux/Windows).
 	Ejecutable string
-	// IconoOrigen es la ruta de un PNG que se usará como icono.
+	// IconoOrigen es la ruta de un PNG que se usará como icono en Linux.
 	IconoOrigen string
+	// IconoICO es la ruta de un .ico para el acceso directo de Windows.
+	IconoICO string
 	// BundleApp es la ruta de un paquete .app (solo macOS).
 	BundleApp string
 	// DirectorioDatos permite sobrescribir la base XDG (útil en pruebas).
 	DirectorioDatos string
+	// DirectorioMenu permite sobrescribir el menú Inicio (útil en pruebas).
+	DirectorioMenu string
 }
 
 // Resultado describe lo que se instaló.
@@ -54,11 +58,111 @@ func Instalar(op Opciones) (Resultado, error) {
 		return instalarLinux(op)
 	case "darwin":
 		return instalarDarwin(op)
+	case "windows":
+		return instalarWindows(op)
 	default:
-		return Resultado{}, fmt.Errorf(
-			"la instalación automática aún no está disponible en %s; "+
-				"usa el instalador .msi o .exe que genera Tauri", runtime.GOOS)
+		return Resultado{}, fmt.Errorf("sistema operativo no soportado: %s", runtime.GOOS)
 	}
+}
+
+// instalarWindows crea un acceso directo en el menú Inicio mediante PowerShell.
+func instalarWindows(op Opciones) (Resultado, error) {
+	if strings.TrimSpace(op.Ejecutable) == "" {
+		return Resultado{}, fmt.Errorf("no se encontró el ejecutable compilado")
+	}
+	op.Slug = limpiarSlug(op.Slug)
+	if op.Slug == "" {
+		return Resultado{}, fmt.Errorf("el identificador de la aplicación está vacío")
+	}
+
+	dir, err := directorioMenuInicio(op.DirectorioMenu)
+	if err != nil {
+		return Resultado{}, err
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return Resultado{}, fmt.Errorf("no se pudo crear %q: %w", dir, err)
+	}
+
+	nombre := nombreArchivoWindows(op.Nombre)
+	if nombre == "" {
+		nombre = op.Slug
+	}
+	res := Resultado{
+		Entrada:    filepath.Join(dir, nombre+".lnk"),
+		Ejecutable: op.Ejecutable,
+		Mensaje:    "Aplicación instalada en el menú Inicio. Búscala y ábrela con doble clic.",
+	}
+
+	potencia, err := buscarPowerShell()
+	if err != nil {
+		return Resultado{}, err
+	}
+	script := scriptAccesoDirecto(op, res.Entrada)
+	if salida, err := exec.Command(potencia, "-NoProfile", "-NonInteractive", "-Command", script).CombinedOutput(); err != nil {
+		return Resultado{}, fmt.Errorf("no se pudo crear el acceso directo: %v: %s", err, strings.TrimSpace(string(salida)))
+	}
+
+	if _, err := os.Stat(res.Entrada); err != nil {
+		return Resultado{}, fmt.Errorf("el acceso directo no se creó: %w", err)
+	}
+	return res, nil
+}
+
+// scriptAccesoDirecto construye el guion de PowerShell que crea el .lnk.
+func scriptAccesoDirecto(op Opciones, destino string) string {
+	citar := func(s string) string { return "'" + strings.ReplaceAll(s, "'", "''") + "'" }
+
+	var b strings.Builder
+	b.WriteString("$ws = New-Object -ComObject WScript.Shell;")
+	b.WriteString("$s = $ws.CreateShortcut(" + citar(destino) + ");")
+	b.WriteString("$s.TargetPath = " + citar(op.Ejecutable) + ";")
+	if dir := filepath.Dir(op.Ejecutable); dir != "" {
+		b.WriteString("$s.WorkingDirectory = " + citar(dir) + ";")
+	}
+	if op.IconoICO != "" {
+		b.WriteString("$s.IconLocation = " + citar(op.IconoICO) + ";")
+	}
+	if op.Nombre != "" {
+		b.WriteString("$s.Description = " + citar(op.Nombre) + ";")
+	}
+	b.WriteString("$s.Save()")
+	return b.String()
+}
+
+// buscarPowerShell localiza el intérprete de PowerShell disponible.
+func buscarPowerShell() (string, error) {
+	for _, nombre := range []string{"powershell", "powershell.exe", "pwsh", "pwsh.exe"} {
+		if ruta, err := exec.LookPath(nombre); err == nil {
+			return ruta, nil
+		}
+	}
+	return "", fmt.Errorf("no se encontró PowerShell para crear el acceso directo")
+}
+
+// directorioMenuInicio resuelve la carpeta del menú Inicio del usuario.
+func directorioMenuInicio(override string) (string, error) {
+	if strings.TrimSpace(override) != "" {
+		return override, nil
+	}
+	if appdata := strings.TrimSpace(os.Getenv("APPDATA")); appdata != "" {
+		return filepath.Join(appdata, "Microsoft", "Windows", "Start Menu", "Programs"), nil
+	}
+	return "", fmt.Errorf("no se pudo localizar el menú Inicio (variable APPDATA no definida)")
+}
+
+// nombreArchivoWindows elimina los caracteres no válidos en un nombre de archivo.
+func nombreArchivoWindows(nombre string) string {
+	limpiar := strings.Map(func(r rune) rune {
+		switch r {
+		case '\\', '/', ':', '*', '?', '"', '<', '>', '|':
+			return -1
+		}
+		if r < 32 {
+			return -1
+		}
+		return r
+	}, nombre)
+	return strings.TrimSpace(limpiar)
 }
 
 // instalarLinux crea una entrada .desktop y copia el icono a las rutas XDG.

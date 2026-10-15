@@ -379,6 +379,7 @@ func (m Modelo) iniciarInstalacion() (Modelo, tea.Cmd) {
 		Comentario:  "Aplicación de escritorio creada con Skynative",
 		Ejecutable:  m.rutaEjecutable,
 		IconoOrigen: filepath.Join(m.rutaProyecto, "src-tauri", "icons", "128x128.png"),
+		IconoICO:    filepath.Join(m.rutaProyecto, "src-tauri", "icons", "icon.ico"),
 		BundleApp:   m.bundleApp,
 	}
 	return m, tea.Batch(m.girador.Tick, instalarCmd(op))
