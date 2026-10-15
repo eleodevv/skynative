@@ -3,12 +3,12 @@
 # Instalador de Skynative para Linux y macOS.
 #
 # Uso:
-#   curl -fsSL https://github.com/TU-USUARIO/skynative/releases/latest/download/install.sh | sh
+#   curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/install.sh | sh
 #
 # Variables opcionales:
 #   SKYNATIVE_VERSION  versión a instalar (por defecto "latest"; acepta "v0.1.0")
 #   SKYNATIVE_DIR      directorio de instalación (por defecto "$HOME/.local/bin")
-#   SKYNATIVE_REPO     repositorio "usuario/proyecto" (por defecto "TU-USUARIO/skynative")
+#   SKYNATIVE_REPO     repositorio "usuario/proyecto" (por defecto "eleodevv/skynative")
 #
 # No ejecuta ningún binario antes de verificar su checksum SHA-256 y no requiere
 # privilegios de administrador.
@@ -17,7 +17,7 @@
 
 set -eu
 
-REPO="${SKYNATIVE_REPO:-TU-USUARIO/skynative}"
+REPO="${SKYNATIVE_REPO:-eleodevv/skynative}"
 VERSION="${SKYNATIVE_VERSION:-latest}"
 DESTINO="${SKYNATIVE_DIR:-$HOME/.local/bin}"
 

@@ -12,7 +12,7 @@ mantenible.
 ## Puesta en marcha
 
 ```bash
-git clone https://github.com/TU-USUARIO/skynative.git
+git clone https://github.com/eleodevv/skynative.git
 cd skynative
 go build ./cmd/skynative
 ```

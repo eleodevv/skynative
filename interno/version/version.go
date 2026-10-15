@@ -19,12 +19,11 @@ var (
 	Fecha = "desconocida"
 )
 
-// Metadatos del proyecto. Sustituye TU-USUARIO cuando publiques el repositorio;
-// los flujos de GitHub Actions y los scripts de instalación usan estas mismas
-// rutas.
+// Metadatos del proyecto. Los flujos de GitHub Actions y los scripts de
+// instalación usan estas mismas rutas.
 var (
 	// Repositorio es la URL del repositorio del proyecto.
-	Repositorio = "https://github.com/TU-USUARIO/skynative"
+	Repositorio = "https://github.com/eleodevv/skynative"
 	// URLInstaladorLinux es el instalador para Linux y macOS.
 	URLInstaladorLinux = Repositorio + "/releases/latest/download/install.sh"
 	// URLInstaladorWindows es el instalador para Windows (PowerShell).

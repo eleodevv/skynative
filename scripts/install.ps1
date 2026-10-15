@@ -2,12 +2,12 @@
     Instalador de Skynative para Windows (PowerShell).
 
     Uso:
-      irm https://github.com/TU-USUARIO/skynative/releases/latest/download/install.ps1 | iex
+      irm https://github.com/eleodevv/skynative/releases/latest/download/install.ps1 | iex
 
     Variables opcionales (o parámetros):
       -Version  versión a instalar (por defecto "latest"; acepta "v0.1.0")
       -Dir      directorio de instalación (por defecto %LOCALAPPDATA%\Programs\Skynative)
-      SKYNATIVE_REPO  repositorio "usuario/proyecto" (por defecto "TU-USUARIO/skynative")
+      SKYNATIVE_REPO  repositorio "usuario/proyecto" (por defecto "eleodevv/skynative")
 
     No ejecuta ningún binario antes de verificar su checksum SHA-256 y no
     requiere privilegios de administrador (instala en el perfil del usuario y
@@ -21,7 +21,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$Repo = if ($env:SKYNATIVE_REPO) { $env:SKYNATIVE_REPO } else { "TU-USUARIO/skynative" }
+$Repo = if ($env:SKYNATIVE_REPO) { $env:SKYNATIVE_REPO } else { "eleodevv/skynative" }
 
 # Detectar la arquitectura.
 $arch = switch ($env:PROCESSOR_ARCHITECTURE) {

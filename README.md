@@ -22,9 +22,7 @@ Al abrirla verás un menú con estas acciones:
 El resultado es un proyecto Tauri v2 válido y, tras compilarlo, una aplicación
 de escritorio que abre una ventana nativa cargando la página indicada.
 
-> **Nota sobre las URL.** Los enlaces `https://github.com/TU-USUARIO/skynative`
-> son marcadores. Sustitúyelos por la URL real de tu repositorio antes de
-> publicar releases o usar los instaladores.
+Sitio del proyecto: <https://eleodevv.github.io/skynative/>
 
 ---
 
@@ -153,20 +151,20 @@ menú de Skynative.
 ### Linux y macOS
 
 ```bash
-curl -fsSL https://github.com/TU-USUARIO/skynative/releases/latest/download/install.sh | sh
+curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/install.sh | sh
 ```
 
 Opciones mediante variables de entorno:
 
 ```bash
 SKYNATIVE_VERSION=v0.1.0 SKYNATIVE_DIR="$HOME/bin" \
-  curl -fsSL https://github.com/TU-USUARIO/skynative/releases/latest/download/install.sh | sh
+  curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/install.sh | sh
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
-irm https://github.com/TU-USUARIO/skynative/releases/latest/download/install.ps1 | iex
+irm https://github.com/eleodevv/skynative/releases/latest/download/install.ps1 | iex
 ```
 
 Los instaladores detectan sistema y arquitectura, descargan el artefacto
@@ -197,7 +195,7 @@ Remove-Item -Recurse "$env:LOCALAPPDATA\Programs\Skynative"
 Requiere Go 1.23 o superior.
 
 ```bash
-git clone https://github.com/TU-USUARIO/skynative.git
+git clone https://github.com/eleodevv/skynative.git
 cd skynative
 make compilar-local      # genera dist/skynative
 ./dist/skynative --version
