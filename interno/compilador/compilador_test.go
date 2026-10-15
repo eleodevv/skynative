@@ -49,22 +49,29 @@ func TestCompilarRutaInvalida(t *testing.T) {
 
 func TestBuscarArtefactos(t *testing.T) {
 	srcTauri := t.TempDir()
-	dirBundle := filepath.Join(srcTauri, "target", "release", "bundle")
-	deb := filepath.Join(dirBundle, "deb")
-	appimage := filepath.Join(dirBundle, "appimage")
+	dirRelease := filepath.Join(srcTauri, "target", "release")
+	deb := filepath.Join(dirRelease, "bundle", "deb")
+	appimage := filepath.Join(dirRelease, "bundle", "appimage")
 	for _, d := range []string{deb, appimage} {
 		if err := os.MkdirAll(d, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if err := os.WriteFile(filepath.Join(deb, "app.deb"), []byte("x"), 0o644); err != nil {
+	paqueteDeb := filepath.Join(deb, "app.deb")
+	paqueteAppImage := filepath.Join(appimage, "app.AppImage")
+	if err := os.WriteFile(paqueteDeb, []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(appimage, "app.AppImage"), []byte("x"), 0o644); err != nil {
+	if err := os.WriteFile(paqueteAppImage, []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	// Binario suelto en target/release.
-	if err := os.WriteFile(filepath.Join(srcTauri, "target", "release", "app"), []byte("bin"), 0o755); err != nil {
+	// Binario suelto en target/release. En Windows el ejecutable lleva .exe.
+	nombreBinario := "app"
+	if runtime.GOOS == "windows" {
+		nombreBinario = "app.exe"
+	}
+	binario := filepath.Join(dirRelease, nombreBinario)
+	if err := os.WriteFile(binario, []byte("bin"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -75,15 +82,15 @@ func TestBuscarArtefactos(t *testing.T) {
 	if len(artefactos) != 3 {
 		t.Errorf("se esperaban 3 artefactos, se obtuvieron %d: %v", len(artefactos), artefactos)
 	}
-	for _, esperado := range []string{".deb", ".AppImage", "release/app"} {
+	for _, esperado := range []string{paqueteDeb, paqueteAppImage, binario} {
 		encontrado := false
 		for _, a := range artefactos {
-			if strings.Contains(a, esperado) {
+			if a == esperado {
 				encontrado = true
 			}
 		}
 		if !encontrado {
-			t.Errorf("no se encontró un artefacto que contenga %q", esperado)
+			t.Errorf("no se encontró el artefacto %q: %v", esperado, artefactos)
 		}
 	}
 }
