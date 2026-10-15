@@ -14,6 +14,7 @@ import (
 	"github.com/skynative/skynative/interno/configuracion"
 	"github.com/skynative/skynative/interno/diagnostico"
 	"github.com/skynative/skynative/interno/generador"
+	"github.com/skynative/skynative/interno/herramientas"
 	"github.com/skynative/skynative/interno/instalador"
 	"github.com/skynative/skynative/interno/proyectos"
 )
@@ -34,9 +35,11 @@ type (
 		res instalador.Resultado
 		err error
 	}
-	msgDiagnostico []diagnostico.Estado
-	msgProyectos   []proyectos.Proyecto
-	msgError       struct{ err error }
+	msgChequeoHerramientas    []diagnostico.Estado
+	msgHerramientasInstaladas struct{ err error }
+	msgDiagnostico            []diagnostico.Estado
+	msgProyectos              []proyectos.Proyecto
+	msgError                  struct{ err error }
 )
 
 // generarCmd crea el proyecto en disco y lo registra si todo va bien.
@@ -124,6 +127,26 @@ func escucharLog(canal chan string) tea.Cmd {
 func diagnosticoCmd() tea.Cmd {
 	return func() tea.Msg {
 		return msgDiagnostico(diagnostico.Ejecutar(context.Background()))
+	}
+}
+
+// chequeoHerramientasCmd comprueba en segundo plano si el sistema tiene lo
+// necesario para compilar, sin cambiar de pantalla.
+func chequeoHerramientasCmd() tea.Cmd {
+	return func() tea.Msg {
+		return msgChequeoHerramientas(diagnostico.Ejecutar(context.Background()))
+	}
+}
+
+// instalarHerramientasCmd instala Rust, la CLI de Tauri y las dependencias del
+// sistema, escribiendo el progreso en el canal.
+func instalarHerramientasCmd(ctx context.Context, canal chan string) tea.Cmd {
+	return func() tea.Msg {
+		escritor := nuevoEscritorCanal(canal)
+		err := herramientas.Instalar(ctx, herramientas.PlanParaSistema(), escritor)
+		escritor.cerrar()
+		close(canal)
+		return msgHerramientasInstaladas{err: err}
 	}
 }
 

@@ -11,6 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/skynative/skynative/interno/configuracion"
+	"github.com/skynative/skynative/interno/generador"
 )
 
 // TestProgramaArrancaYSale demuestra que el bucle de Bubble Tea se inicia y
@@ -133,9 +134,49 @@ func TestMenuNavegacion(t *testing.T) {
 	}
 }
 
+// TestOpcionInstalarHerramientas comprueba que la opción del menú inicia la
+// instalación de dependencias externas.
+func TestOpcionInstalarHerramientas(t *testing.T) {
+	m := NuevoModelo()
+	m.opcionMenu = 1
+	actualizado, _ := m.ejecutarOpcionMenu()
+	m = actualizado.(Modelo)
+	if m.estado != estadoProgreso || !m.instalandoHerramientas {
+		t.Fatalf("debería iniciar la instalación de herramientas, estado = %v", m.estado)
+	}
+}
+
+// TestChequeoHerramientasMarcaEstado verifica la comprobación en segundo plano.
+func TestChequeoHerramientasMarcaEstado(t *testing.T) {
+	m := NuevoModelo()
+	m = aplicar(m, msgChequeoHerramientas{})
+	if !m.chequeoHecho {
+		t.Error("el chequeo debería marcarse como hecho")
+	}
+	if !m.herramientasListas {
+		t.Error("sin estados críticos fallidos las herramientas deberían estar listas")
+	}
+}
+
+// TestHerramientasListasCompilaAutomaticamente comprueba que, si el entorno
+// está preparado, tras generar se encadena la compilación.
+func TestHerramientasListasCompilaAutomaticamente(t *testing.T) {
+	m := NuevoModelo()
+	m.herramientasListas = true
+	m.cfg = configuracion.Nueva("https://ejemplo.com", "Prueba")
+	m.cfg.Normalizar()
+	m.estado = estadoProgreso
+	m.rutaProyecto = t.TempDir()
+
+	m = aplicar(m, msgGenerado{res: generador.Resultado{Directorio: m.rutaProyecto, NombrePaquete: "prueba"}})
+	if m.estado != estadoProgreso || !m.compilandoAhora {
+		t.Fatalf("debería encadenar la compilación automática, estado = %v, compilando = %v", m.estado, m.compilandoAhora)
+	}
+}
+
 func TestOpcionVersionNoPermiteCompilar(t *testing.T) {
 	m := NuevoModelo()
-	m.opcionMenu = 3
+	m.opcionMenu = 4
 	m = aplicar(m, tecla(tea.KeyEnter))
 
 	if m.estado != estadoResultado {

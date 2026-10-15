@@ -13,7 +13,8 @@
 # No ejecuta ningún binario antes de verificar su checksum SHA-256 y no requiere
 # privilegios de administrador.
 #
-# Desinstalación: rm "$SKYNATIVE_DIR/skynative" (o ~/.local/bin/skynative).
+# Desinstalación:
+#   curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/desinstalar.sh | sh
 
 set -eu
 

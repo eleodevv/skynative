@@ -72,5 +72,7 @@ jobs:
             dist/*
             scripts/install.sh
             scripts/install.ps1
+            scripts/desinstalar.sh
+            scripts/desinstalar.ps1
           generate_release_notes: true
           fail_on_unmatched_files: true

@@ -12,12 +12,17 @@ skynative
 Al abrirla verás un menú con estas acciones:
 
 ```
-❯ Crear aplicación
-  Listar proyectos
-  Diagnóstico del entorno
-  Ver versión
-  Salir
+1  Crear aplicación
+2  Instalar herramientas necesarias
+3  Listar proyectos
+4  Diagnóstico del entorno
+5  Ver versión
+6  Salir
 ```
+
+Si al arrancar falta Rust, la CLI de Tauri o las dependencias del sistema, el
+menú lo avisa y la opción **Instalar herramientas necesarias** las instala. Con
+el entorno listo, crear una aplicación **la genera y la compila automáticamente**.
 
 El resultado es un proyecto Tauri v2 válido y, tras compilarlo, una aplicación
 de escritorio que abre una ventana nativa cargando la página indicada.
@@ -62,6 +67,7 @@ skynative/
 │   ├── generador/               Creación del proyecto Tauri v2 y de los iconos
 │   ├── compilador/              Ejecución de la CLI de Tauri y descubrimiento de artefactos
 │   ├── instalador/              Registro de la app compilada en el menú del sistema
+│   ├── herramientas/            Instalación de Rust, la CLI de Tauri y dependencias
 │   ├── diagnostico/             Comprobación de Go, Rust, Cargo, Tauri y dependencias
 │   ├── proyectos/               Registro local de aplicaciones generadas
 │   └── version/                 Versión y metadatos del binario
@@ -77,17 +83,21 @@ skynative/
 
 1. `main.go` atiende `--help` y `--version`; si no, comprueba que la entrada es
    una terminal y arranca `tui.Ejecutar`.
-2. La TUI muestra el menú y, según la acción, pide datos en un formulario o
+2. Al arrancar, la TUI comprueba el entorno en segundo plano (`diagnostico`) y
+   avisa en el menú si faltan herramientas; la acción **Instalar herramientas
+   necesarias** ejecuta `herramientas.Instalar` con la salida en vivo.
+3. La TUI muestra el menú y, según la acción, pide datos en un formulario o
    recurre a los paquetes internos.
-3. `configuracion` normaliza y valida: URL, nombre, dimensiones, versión,
+4. `configuracion` normaliza y valida: URL, nombre, dimensiones, versión,
    identificador y nombre de paquete.
-4. `generador.Generar` escribe el proyecto: plantillas incrustadas
+5. `generador.Generar` escribe el proyecto: plantillas incrustadas
    (`embed`), `tauri.conf.json` serializado como JSON y los iconos PNG/ICO/ICNS
    generados por código. La TUI recibe la salida en vivo mientras trabaja.
-5. `proyectos` registra la aplicación.
-6. Opcionalmente, `compilador.Compilar` lanza `cargo tauri build` y busca los
+6. `proyectos` registra la aplicación.
+7. Si el entorno está listo, la compilación se **encadena automáticamente**
+   tras generar. `compilador.Compilar` lanza `cargo tauri build` y busca los
    paquetes resultantes; la salida se muestra en la pantalla de progreso.
-7. Tras compilar, `instalador.Instalar` registra la app en el sistema (entrada
+8. Tras compilar, `instalador.Instalar` registra la app en el sistema (entrada
    `.desktop` e icono en Linux, copia a `~/Applications` en macOS) para poder
    abrirla con doble clic y encontrarla al buscar.
 
@@ -145,8 +155,10 @@ Otras distribuciones: consulta la
 - Microsoft Edge WebView2 Runtime (incluido en Windows 10/11).
 - Las herramientas de compilación de Visual Studio (C++ Build Tools).
 
-Verifica el entorno en cualquier momento desde **Diagnóstico del entorno** en el
-menú de Skynative.
+No hace falta instalarlos a mano: la opción **Instalar herramientas necesarias**
+del menú los instala por ti (en Linux usa `apt-get`, `dnf` o `pacman` y, si hace
+falta `sudo`, te muestra el comando exacto). Verifica el entorno en cualquier
+momento desde **Diagnóstico del entorno**.
 
 ---
 
@@ -184,19 +196,23 @@ release).
 
 ```bash
 # Linux y macOS
-rm "${SKYNATIVE_DIR:-$HOME/.local/bin}/skynative"
+curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/desinstalar.sh | sh
 ```
 
 ```powershell
-# Windows
-Remove-Item -Recurse "$env:LOCALAPPDATA\Programs\Skynative"
+# Windows (PowerShell)
+irm https://github.com/eleodevv/skynative/releases/latest/download/desinstalar.ps1 | iex
 ```
+
+Los desinstaladores eliminan el binario (y, en Windows, su carpeta y la entrada
+del PATH del usuario). No tocan los proyectos ni las aplicaciones creadas con
+Skynative.
 
 ---
 
 ## Instalación desde el código fuente
 
-Requiere Go 1.23 o superior.
+Requiere Go 1.24 o superior.
 
 ```bash
 git clone https://github.com/eleodevv/skynative.git
@@ -232,7 +248,7 @@ skynative --version   # versión instalada
 
 | Pantalla | Teclas |
 | --- | --- |
-| Menú | `↑`/`↓` o `1`-`5` para elegir · `Enter` abrir · `q` salir |
+| Menú | `↑`/`↓` o `1`-`6` para elegir · `Enter` abrir · `q` salir |
 | Formulario | `Tab`/`Shift+Tab` o `↑`/`↓` moverse · `Enter` abrir el explorador en «Carpeta» o crear en «Crear aplicación» · `Espacio` alternar la casilla · `Ctrl+G` crear · `Esc` volver |
 | Explorador | `↑`/`↓` moverse · `Enter` entrar o elegir · `S` usar la carpeta actual · `Retroceso` subir · `Inicio` ir al perfil · `Esc` cancelar |
 | Progreso | `↑`/`↓` desplazar la salida · `Esc` cancelar |
@@ -240,16 +256,19 @@ skynative --version   # versión instalada
 
 ### Cómo crear, compilar e instalar una aplicación
 
-1. Elige **Crear aplicación** en el menú.
-2. Rellena la URL (solo `http`/`https`), el nombre, el ancho, el alto y la
+1. Si el menú avisa de que faltan herramientas, elige **Instalar herramientas
+   necesarias** y espera a que terminen; al volver, el entorno quedará listo.
+2. Elige **Crear aplicación** en el menú.
+3. Rellena la URL (solo `http`/`https`), el nombre, el ancho, el alto y la
    carpeta de salida (abre el explorador integrado con `Enter`).
-3. Pulsa `Ctrl+G` o selecciona **Crear aplicación**.
-4. Se crea `<carpeta>/<nombre>/` con `src-tauri/` (Cargo.toml, build.rs,
+4. Pulsa `Ctrl+G` o selecciona **Crear aplicación**.
+5. Se crea `<carpeta>/<nombre>/` con `src-tauri/` (Cargo.toml, build.rs,
    main.rs, tauri.conf.json e iconos).
-5. En la pantalla de resultado pulsa `C` para compilar. Los artefactos
-   aparecen en `<proyecto>/src-tauri/target/release/bundle/` (y el ejecutable
-   en `<proyecto>/src-tauri/target/release/`).
-6. Pulsa `I` para instalar la app en el sistema. Skynative copia el icono y
+6. Si el entorno está listo, la compilación arranca **automáticamente**. Si no,
+   pulsa `C` en la pantalla de resultado. Los artefactos aparecen en
+   `<proyecto>/src-tauri/target/release/bundle/` (y el ejecutable en
+   `<proyecto>/src-tauri/target/release/`).
+7. Pulsa `I` para instalar la app en el sistema. Skynative copia el icono y
    crea el lanzador con el que podrás **abrirla con doble clic** y
    **encontrarla al buscar** en tus aplicaciones:
    - **Linux:** entrada `.desktop` en `~/.local/share/applications/` e icono en
@@ -306,7 +325,8 @@ generación y el arranque/cierre del programa Bubble Tea).
 3. El flujo `.github/workflows/release.yml` se activa automáticamente:
    - ejecuta pruebas y `go vet`;
    - compila los binarios de todas las plataformas y sus checksums;
-   - publica una GitHub Release con los artefactos, `install.sh` e `install.ps1`.
+   - publica una GitHub Release con los artefactos, `install.sh`, `install.ps1`,
+     `desinstalar.sh` y `desinstalar.ps1`.
 
 Pasos manuales equivalentes (local):
 
@@ -404,6 +424,10 @@ La aplicación generada carga la URL remota en la WebView del sistema
   `BuscarArtefactos` localiza los paquetes y el binario.
 - **`interno/instalador`** — `Instalar` registra la app compilada en el menú del
   sistema: entrada `.desktop` e icono (Linux) o copia del `.app` (macOS).
+- **`interno/herramientas`** — `Plan` describe los pasos para instalar Rust, la
+  CLI de Tauri y las dependencias nativas; `Instalar` los ejecuta con la salida
+  en vivo (sin `shell=true`; rustup se descarga con `net/http` y se ejecuta el
+  fichero descargado).
 - **`interno/diagnostico`** — `Ejecutar` comprueba Go, Rust, Cargo, la CLI de
   Tauri y las dependencias por plataforma.
 - **`interno/proyectos`** — registro JSON en el directorio de configuración del

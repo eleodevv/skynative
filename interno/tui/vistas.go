@@ -82,27 +82,26 @@ func (m Modelo) vistaMenu() string {
 
 	subtitulo := estiloSubtitulo.Render("Convierte una URL en una aplicación de escritorio · Tauri v2")
 
-	const anchoFila = 34
+	const anchoFila = 40
 	filas := make([]string, len(opcionesMenu))
 	for i, opcion := range opcionesMenu {
+		texto := fmt.Sprintf("%d  %s", i+1, opcion)
 		if i == m.opcionMenu {
-			filas[i] = estiloSeleccion.Width(anchoFila).Render(" ❯ " + opcion)
+			filas[i] = estiloSeleccion.Width(anchoFila).Render(" ❯ " + texto)
 		} else {
-			filas[i] = lipgloss.NewStyle().Width(anchoFila).Render("   " + opcion)
+			filas[i] = lipgloss.NewStyle().Width(anchoFila).Render("   " + texto)
 		}
 	}
 	menu := estiloPanel.Render(strings.Join(filas, "\n"))
 
-	contenido := lipgloss.JoinVertical(lipgloss.Center,
-		cabecera,
-		"",
-		subtitulo,
-		"",
-		menu,
-		"",
-		estiloAyuda.Render("↑↓ moverse · Enter seleccionar · 1-5 atajos · q salir"),
-	)
-	return m.centrar(contenido)
+	piezas := []string{cabecera, "", subtitulo, "", menu}
+	if m.chequeoHecho && !m.herramientasListas {
+		piezas = append(piezas, "",
+			estiloAviso.Render("⚠ Faltan herramientas para compilar · elige «Instalar herramientas necesarias» (2)"))
+	}
+	piezas = append(piezas, "",
+		estiloAyuda.Render("↑↓ moverse · Enter seleccionar · 1-6 atajos · q salir"))
+	return m.centrar(lipgloss.JoinVertical(lipgloss.Center, piezas...))
 }
 
 func (m Modelo) vistaFormulario() string {
@@ -191,6 +190,8 @@ func (m Modelo) vistaProgreso() string {
 		accion = "Compilando con Tauri (puede tardar varios minutos)…"
 	case m.instalandoAhora:
 		accion = "Instalando la aplicación en el sistema…"
+	case m.instalandoHerramientas:
+		accion = "Instalando las herramientas necesarias (puede tardar varios minutos)…"
 	}
 	cabecera := m.girador.View() + " " + estiloTitulo.Render(accion)
 	salida := estiloCaja.Render(m.registro.View())
@@ -209,6 +210,10 @@ func (m Modelo) vistaResultado() string {
 		b.WriteString(estiloCorrecto.Render("✔ "+m.resumen) + "\n")
 	} else {
 		b.WriteString(estiloError.Render("✖ "+m.resumen) + "\n")
+	}
+
+	if m.exito && m.chequeoHecho && !m.herramientasListas {
+		b.WriteString("\n" + estiloAviso.Render("⚠ Faltan herramientas para compilar · menú → «Instalar herramientas necesarias»") + "\n")
 	}
 
 	if m.rutaProyecto != "" {

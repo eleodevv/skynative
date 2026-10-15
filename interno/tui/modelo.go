@@ -49,6 +49,7 @@ const (
 // opcionesMenu son las entradas del menú principal.
 var opcionesMenu = []string{
 	"Crear aplicación",
+	"Instalar herramientas necesarias",
 	"Listar proyectos",
 	"Diagnóstico del entorno",
 	"Ver versión",
@@ -102,6 +103,11 @@ type Modelo struct {
 	instalado         bool
 	entradaEscritorio string
 
+	// Comprobación e instalación de herramientas externas
+	herramientasListas     bool
+	chequeoHecho           bool
+	instalandoHerramientas bool
+
 	// Listas
 	diagnosticos []diagnostico.Estado
 	proyectos    []proyectos.Proyecto
@@ -153,9 +159,10 @@ func NuevoModelo() Modelo {
 	}
 }
 
-// Init arranca el parpadeo del cursor.
+// Init arranca el parpadeo del cursor y comprueba en segundo plano si están
+// instaladas las herramientas necesarias.
 func (m Modelo) Init() tea.Cmd {
-	return textinput.Blink
+	return tea.Batch(textinputBlink(), chequeoHerramientasCmd())
 }
 
 // textinputBlink devuelve el comando de parpadeo del cursor.

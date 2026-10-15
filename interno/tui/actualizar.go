@@ -10,6 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/skynative/skynative/interno/configuracion"
+	"github.com/skynative/skynative/interno/diagnostico"
 	"github.com/skynative/skynative/interno/instalador"
 	"github.com/skynative/skynative/interno/version"
 )
@@ -51,6 +52,10 @@ func (m Modelo) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.actualizarCompilado(msg)
 	case msgInstalado:
 		return m.actualizarInstalado(msg)
+	case msgChequeoHerramientas:
+		return m.actualizarChequeoHerramientas(msg)
+	case msgHerramientasInstaladas:
+		return m.actualizarHerramientasInstaladas(msg)
 	case msgDiagnostico:
 		m.diagnosticos = msg
 		m.estado = estadoDiagnostico
@@ -105,7 +110,7 @@ func (m Modelo) actualizarMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.opcionMenu = (m.opcionMenu + 1) % len(opcionesMenu)
 	case "q":
 		return m, tea.Quit
-	case "1", "2", "3", "4", "5":
+	case "1", "2", "3", "4", "5", "6":
 		m.opcionMenu = int(msg.String()[0] - '1')
 		return m.ejecutarOpcionMenu()
 	case "enter":
@@ -123,10 +128,12 @@ func (m Modelo) ejecutarOpcionMenu() (tea.Model, tea.Cmd) {
 		m.enfocar()
 		return m, textinputBlink()
 	case 1:
-		return m, proyectosCmd()
+		return m.iniciarInstalacionHerramientas()
 	case 2:
-		return m, diagnosticoCmd()
+		return m, proyectosCmd()
 	case 3:
+		return m, diagnosticoCmd()
+	case 4:
 		m.exito = true
 		m.puedeCompilar = false
 		m.rutaProyecto = ""
@@ -264,6 +271,13 @@ func (m Modelo) actualizarProgreso(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.instalandoAhora = false
 			m.estado = estadoResultado
 		}
+		if m.instalandoHerramientas {
+			m.trabajando = false
+			m.instalandoHerramientas = false
+			m.exito = false
+			m.resumen = "Instalación de herramientas cancelada por el usuario."
+			m.estado = estadoResultado
+		}
 		return m, nil
 	}
 	// Permitir desplazar el registro.
@@ -385,6 +399,27 @@ func (m Modelo) iniciarInstalacion() (Modelo, tea.Cmd) {
 	return m, tea.Batch(m.girador.Tick, instalarCmd(op))
 }
 
+// iniciarInstalacionHerramientas instala las dependencias externas (Rust, CLI
+// de Tauri y bibliotecas del sistema) con salida en vivo.
+func (m Modelo) iniciarInstalacionHerramientas() (Modelo, tea.Cmd) {
+	ctx, cancelar := context.WithCancel(context.Background())
+	m.cancelar = cancelar
+	m.canalLog = make(chan string, 4096)
+	m.lineas = []string{"Instalando las herramientas necesarias (Rust, CLI de Tauri y dependencias)…"}
+	m.registro.SetContent(strings.Join(m.lineas, "\n"))
+	m.estado = estadoProgreso
+	m.trabajando = true
+	m.instalandoHerramientas = true
+	m.compilandoAhora = false
+	m.instalandoAhora = false
+	m.girador = nuevoGirador()
+	return m, tea.Batch(
+		m.girador.Tick,
+		escucharLog(m.canalLog),
+		instalarHerramientasCmd(ctx, m.canalLog),
+	)
+}
+
 // actualizarGenerado procesa el fin de la generación.
 func (m Modelo) actualizarGenerado(msg msgGenerado) (tea.Model, tea.Cmd) {
 	m.trabajando = false
@@ -399,9 +434,43 @@ func (m Modelo) actualizarGenerado(msg msgGenerado) (tea.Model, tea.Cmd) {
 	m.puedeCompilar = true
 	m.rutaProyecto = msg.res.Directorio
 	m.artefactos = nil
+	// Si el entorno está listo, encadenamos la compilación automáticamente.
+	if m.herramientasListas {
+		m.resumen = fmt.Sprintf("Proyecto «%s» generado. Compilando automáticamente…", msg.res.NombrePaquete)
+		return m.iniciarCompilacion()
+	}
 	m.resumen = fmt.Sprintf("Proyecto «%s» generado correctamente.", msg.res.NombrePaquete)
 	m.estado = estadoResultado
 	return m, nil
+}
+
+// actualizarChequeoHerramientas guarda el resultado de la comprobación en
+// segundo plano sin cambiar de pantalla.
+func (m Modelo) actualizarChequeoHerramientas(msg msgChequeoHerramientas) (tea.Model, tea.Cmd) {
+	m.diagnosticos = []diagnostico.Estado(msg)
+	m.chequeoHecho = true
+	m.herramientasListas = !diagnostico.HayCriticosFallidos(m.diagnosticos)
+	return m, nil
+}
+
+// actualizarHerramientasInstaladas procesa el fin de la instalación de las
+// dependencias externas y refresca el estado del entorno.
+func (m Modelo) actualizarHerramientasInstaladas(msg msgHerramientasInstaladas) (tea.Model, tea.Cmd) {
+	m.trabajando = false
+	m.instalandoHerramientas = false
+	if m.cancelar != nil {
+		m.cancelar()
+		m.cancelar = nil
+	}
+	if msg.err != nil {
+		m.exito = false
+		m.resumen = "No se pudieron instalar todas las herramientas: " + msg.err.Error()
+	} else {
+		m.exito = true
+		m.resumen = "Herramientas instaladas. Ya puedes crear y compilar aplicaciones."
+	}
+	m.estado = estadoResultado
+	return m, chequeoHerramientasCmd()
 }
 
 // actualizarCompilado procesa el fin de la compilación.

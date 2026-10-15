@@ -13,7 +13,8 @@
     requiere privilegios de administrador (instala en el perfil del usuario y
     modifica solo el PATH del usuario).
 
-    Desinstalación: Remove-Item -Recurse "$env:LOCALAPPDATA\Programs\Skynative"
+    Desinstalación:
+      irm https://github.com/eleodevv/skynative/releases/latest/download/desinstalar.ps1 | iex
 #>
 param(
     [string]$Version = $(if ($env:SKYNATIVE_VERSION) { $env:SKYNATIVE_VERSION } else { "latest" }),
