@@ -28,8 +28,9 @@ El resultado es un proyecto Tauri v2 válido y, tras compilarlo, una aplicación
 de escritorio que abre una ventana nativa cargando la página indicada.
 
 Toda la interfaz se puede manejar con el **teclado o el ratón** (clic en las
-opciones del menú, en los proyectos y en los botones de acción) y usa un tema
-«cielo» acorde con el nombre de la herramienta.
+opciones del menú, en los proyectos y en los botones de acción) y usa los
+**colores nativos de la terminal** (sin fondos pintados) para adaptarse a
+cualquier tema, claro u oscuro.
 
 ### Crear una aplicación
 
@@ -479,7 +480,7 @@ La aplicación generada carga la URL remota en la WebView del sistema
   (render con Lip Gloss y zonas clicables), `raton.go` (soporte de ratón),
   `logo.go` (logotipo centrado), `actualizar.go` (`Update`), `acciones.go`
   (comandos y mensajes), `explorador.go` (selector de carpetas) y `estilos.go`
-  (tema «cielo»).
+  (paleta nativa de la terminal).
 - **`plantillas`** — archivos de Tauri incrustados con `go:embed`.
 
 ### Convenciones

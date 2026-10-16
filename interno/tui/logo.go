@@ -15,8 +15,8 @@ const (
 	anchoLetra = 5
 )
 
-// coloresLogo define el degradado vertical «cielo» (de nube clara a tormenta).
-var coloresLogo = [alturaLogo]string{"#eaf4ff", "#a9d6ff", "#4aa8ff", "#38d6ff", "#7c8cff"}
+// coloresLogo define el degradado vertical nativo (de rosa a violeta).
+var coloresLogo = [alturaLogo]string{"212", "176", "135", "99", "63"}
 
 // logoFuente dibuja cada carácter en una rejilla de 5x5.
 var logoFuente = map[rune][alturaLogo]string{
