@@ -153,10 +153,19 @@ func signo(x, y float64, p1, p2 [2]float64) float64 {
 	return (x-p2[0])*(p1[1]-p2[1]) - (p1[0]-p2[0])*(y-p2[1])
 }
 
-// codificarPNG serializa una imagen a PNG.
+// conAlfa envuelve una imagen para forzar que el codificador PNG incluya el
+// canal alfa (color type 6). Sin esto, Go detecta que todos los píxeles son
+// opacos y escribe un PNG RGB, que Tauri rechaza con «is not RGBA».
+type conAlfa struct{ image.Image }
+
+// Opaque siempre devuelve falso para que el codificador use RGBA (8 bits por
+// canal). El canal alfa real de la imagen subyacente se conserva intacto.
+func (conAlfa) Opaque() bool { return false }
+
+// codificarPNG serializa una imagen a PNG garantizando el canal alfa.
 func codificarPNG(img image.Image) ([]byte, error) {
 	var buf bytes.Buffer
-	if err := png.Encode(&buf, img); err != nil {
+	if err := png.Encode(&buf, conAlfa{img}); err != nil {
 		return nil, fmt.Errorf("no se pudo codificar el icono PNG: %w", err)
 	}
 	return buf.Bytes(), nil

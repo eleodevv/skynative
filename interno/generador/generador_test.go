@@ -122,6 +122,17 @@ func TestGenerarIconosValidos(t *testing.T) {
 		t.Errorf("tamaño del PNG inesperado: %v", img.Bounds())
 	}
 
+	// Tauri exige que los PNG tengan canal alfa (color type 6 = RGBA).
+	for _, nombre := range []string{"32x32.png", "128x128.png", "128x128@2x.png", "icon.png"} {
+		crudo, err := os.ReadFile(filepath.Join(dirIconos, nombre))
+		if err != nil {
+			t.Fatalf("no se pudo leer %q: %v", nombre, err)
+		}
+		if len(crudo) < 26 || crudo[25] != 6 {
+			t.Errorf("%s debería ser RGBA (color type 6)", nombre)
+		}
+	}
+
 	ico, err := os.ReadFile(filepath.Join(dirIconos, "icon.ico"))
 	if err != nil {
 		t.Fatalf("no se pudo leer el ICO: %v", err)

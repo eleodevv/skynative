@@ -12,7 +12,7 @@ import "fmt"
 // sobrescriben mediante -ldflags "-X ...".
 var (
 	// Version es la versión semántica de Skynative.
-	Version = "0.4.0"
+	Version = "0.4.1"
 	// Commit es el hash corto del commit con el que se compiló el binario.
 	Commit = "desconocido"
 	// Fecha es la fecha de compilación en formato RFC3339 (UTC).
