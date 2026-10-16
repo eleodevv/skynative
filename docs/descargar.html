@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Descargar — Skynative</title>
+<meta name="description" content="Instala y desinstala Skynative en Linux, macOS y Windows con un solo comando." />
+<meta name="color-scheme" content="light" />
+<meta name="theme-color" content="#ffffff" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231746c0' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17.5 19a4.5 4.5 0 0 0 .4-8.98A6 6 0 0 0 6.2 11.3 4 4 0 0 0 7 19z'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --color-blue: #1746c0;
+    --color-paper-white: #ffffff;
+    --color-ink-black: #000000;
+
+    --font-newyork: 'Playfair Display', 'DM Serif Display', Georgia, 'Times New Roman', serif;
+    --font-dm-sans: 'DM Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-times: 'Times New Roman', Times, Georgia, serif;
+
+    --text-caption: 10px;
+    --leading-caption: 1.15;
+    --text-body: 20px;
+    --leading-body: 1.5;
+    --text-body-lg: 25px;
+    --leading-body-lg: 1.5;
+    --text-heading: 50px;
+    --leading-heading: 1.15;
+
+    --spacing-10: 10px;
+    --spacing-20: 20px;
+    --spacing-30: 30px;
+    --spacing-42: 42px;
+    --spacing-50: 50px;
+    --spacing-100: 100px;
+
+    --radius-buttons: 9999px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    background: var(--color-paper-white);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-paper-white);
+    color: var(--color-ink-black);
+    font-family: var(--font-dm-sans);
+    font-weight: 400;
+    font-size: var(--text-body);
+    line-height: var(--leading-body);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  svg { display: block; }
+  button { font: inherit; color: inherit; border: 0; background: none; }
+
+  :focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 4px;
+    border-radius: 9999px;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-20);
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: var(--spacing-30) var(--spacing-20);
+  }
+  .brand {
+    font-family: var(--font-newyork);
+    font-size: 22px;
+    line-height: 1;
+    color: var(--color-ink-black);
+  }
+
+  .link {
+    font-family: var(--font-dm-sans);
+    font-size: var(--text-body);
+    font-weight: 400;
+    line-height: var(--leading-caption);
+    border-bottom: 1px solid transparent;
+    transition: border-color .25s ease;
+  }
+  .link:hover { border-bottom-color: var(--color-ink-black); }
+
+  .section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: var(--spacing-100) var(--spacing-20);
+  }
+  .section + .section { border-top: 1px solid rgba(0, 0, 0, 0.12); }
+
+  .caption {
+    margin: 0 0 var(--spacing-30);
+    font-family: var(--font-times);
+    font-size: var(--text-caption);
+    font-weight: 400;
+    line-height: var(--leading-caption);
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--color-ink-black);
+  }
+
+  .heading {
+    margin: 0;
+    max-width: 18ch;
+    font-family: var(--font-newyork);
+    font-weight: 400;
+    font-size: clamp(34px, 5.2vw, 50px);
+    line-height: var(--leading-heading);
+    color: var(--color-ink-black);
+  }
+  .heading em { font-style: italic; }
+
+  .body {
+    max-width: 46ch;
+    margin: var(--spacing-30) 0 0;
+    font-family: var(--font-dm-sans);
+    font-size: var(--text-body);
+    line-height: var(--leading-body);
+    color: var(--color-ink-black);
+  }
+
+  .os {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-10);
+    margin: var(--spacing-42) 0 0;
+  }
+  .os-tab {
+    padding: 10px 26px;
+    border: 1px solid var(--color-ink-black);
+    border-radius: var(--radius-buttons);
+    font-family: var(--font-dm-sans);
+    font-size: var(--text-body);
+    font-weight: 400;
+    line-height: var(--leading-caption);
+    color: var(--color-ink-black);
+    cursor: pointer;
+    transition: background-color .2s ease, color .2s ease;
+  }
+  .os-tab:hover { background: rgba(0, 0, 0, 0.06); }
+  .os-tab[aria-selected="true"] {
+    background: var(--color-ink-black);
+    color: var(--color-paper-white);
+  }
+
+  .cmd {
+    width: 100%;
+    max-width: 900px;
+    margin: var(--spacing-42) 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-20);
+    padding: var(--spacing-30) 0;
+    border-top: 1px solid var(--color-ink-black);
+    border-bottom: 1px solid var(--color-ink-black);
+  }
+  .cmd[hidden] { display: none; }
+  .cmd-line {
+    margin: 0;
+    max-width: 100%;
+    text-wrap: balance;
+    font-family: var(--font-dm-sans);
+    font-size: var(--text-body);
+    line-height: var(--leading-body);
+    color: var(--color-ink-black);
+    overflow-wrap: anywhere;
+  }
+  .cmd-line .prompt {
+    font-family: var(--font-times);
+    color: var(--color-blue);
+    margin-right: 6px;
+  }
+  .copy {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-10);
+    padding: 10px 26px;
+    border: 1px solid var(--color-ink-black);
+    border-radius: var(--radius-buttons);
+    font-family: var(--font-dm-sans);
+    font-size: var(--text-body);
+    line-height: var(--leading-caption);
+    color: var(--color-ink-black);
+    cursor: pointer;
+    transition: background-color .2s ease, color .2s ease;
+  }
+  .copy:hover { background: var(--color-ink-black); color: var(--color-paper-white); }
+  .copy-icon { width: 18px; height: 18px; }
+
+  .closing {
+    padding: var(--spacing-50) var(--spacing-20) var(--spacing-100);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-30);
+    text-align: center;
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
+  }
+  .closing-links { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--spacing-30); }
+
+  @media (max-width: 720px) {
+    .section { padding: var(--spacing-50) var(--spacing-20); }
+    .topbar { padding: var(--spacing-20); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .link, .os-tab, .copy { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html">Skynative</a>
+  <a class="link" href="index.html">← Volver</a>
+</header>
+
+<main>
+  <section class="section" aria-labelledby="descargar-title">
+    <p class="caption">Descargar</p>
+    <h1 class="heading" id="descargar-title">Instálalo en un <em>instante</em></h1>
+    <p class="body">Elige tu sistema y pega un comando. El instalador verifica el checksum SHA-256 antes de ejecutar nada y no pide administrador.</p>
+
+    <div class="os" role="tablist" aria-label="Instalación por sistema operativo">
+      <button class="os-tab" type="button" role="tab" id="tab-linux" aria-controls="panel-linux" aria-selected="true">Linux</button>
+      <button class="os-tab" type="button" role="tab" id="tab-macos" aria-controls="panel-macos" aria-selected="false" tabindex="-1">macOS</button>
+      <button class="os-tab" type="button" role="tab" id="tab-windows" aria-controls="panel-windows" aria-selected="false" tabindex="-1">Windows</button>
+    </div>
+
+    <div class="cmd" role="tabpanel" id="panel-linux" aria-labelledby="tab-linux">
+      <p class="cmd-line"><span class="prompt">$</span>curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/install.sh | sh</p>
+      <button class="copy" type="button" data-copy="curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/install.sh | sh" aria-label="Copiar comando de instalación para Linux">
+        <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="9" y="9" width="11" height="11" rx="3" /><path d="M5 15V6a3 3 0 0 1 3-3h9" />
+        </svg>
+        <span class="copy-label">Copiar</span>
+      </button>
+    </div>
+
+    <div class="cmd" role="tabpanel" id="panel-macos" aria-labelledby="tab-macos" hidden>
+      <p class="cmd-line"><span class="prompt">$</span>curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/install.sh | sh</p>
+      <button class="copy" type="button" data-copy="curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/install.sh | sh" aria-label="Copiar comando de instalación para macOS">
+        <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="9" y="9" width="11" height="11" rx="3" /><path d="M5 15V6a3 3 0 0 1 3-3h9" />
+        </svg>
+        <span class="copy-label">Copiar</span>
+      </button>
+    </div>
+
+    <div class="cmd" role="tabpanel" id="panel-windows" aria-labelledby="tab-windows" hidden>
+      <p class="cmd-line"><span class="prompt">PS&gt;</span>irm https://github.com/eleodevv/skynative/releases/latest/download/install.ps1 | iex</p>
+      <button class="copy" type="button" data-copy="irm https://github.com/eleodevv/skynative/releases/latest/download/install.ps1 | iex" aria-label="Copiar comando de instalación para Windows">
+        <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="9" y="9" width="11" height="11" rx="3" /><path d="M5 15V6a3 3 0 0 1 3-3h9" />
+        </svg>
+        <span class="copy-label">Copiar</span>
+      </button>
+    </div>
+
+    <p class="body">Necesitas <strong>Rust</strong> y la <strong>CLI de Tauri v2</strong>; el propio menú de Skynative instala lo que falte. Para actualizar, vuelve a ejecutar el instalador.</p>
+  </section>
+
+  <section class="section" aria-labelledby="desinstalar-title">
+    <p class="caption">Desinstalar</p>
+    <h2 class="heading" id="desinstalar-title">Quítalo cuando <em>quieras</em></h2>
+    <p class="body">Elimina Skynative del sistema. Tus proyectos y las aplicaciones creadas se quedan intactos.</p>
+
+    <div class="os" role="tablist" aria-label="Desinstalación por sistema operativo">
+      <button class="os-tab" type="button" role="tab" id="dtab-unix" aria-controls="dpanel-unix" aria-selected="true">Linux · macOS</button>
+      <button class="os-tab" type="button" role="tab" id="dtab-win" aria-controls="dpanel-win" aria-selected="false" tabindex="-1">Windows</button>
+    </div>
+
+    <div class="cmd" role="tabpanel" id="dpanel-unix" aria-labelledby="dtab-unix">
+      <p class="cmd-line"><span class="prompt">$</span>curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/desinstalar.sh | sh</p>
+      <button class="copy" type="button" data-copy="curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/desinstalar.sh | sh" aria-label="Copiar comando de desinstalación para Linux y macOS">
+        <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="9" y="9" width="11" height="11" rx="3" /><path d="M5 15V6a3 3 0 0 1 3-3h9" />
+        </svg>
+        <span class="copy-label">Copiar</span>
+      </button>
+    </div>
+
+    <div class="cmd" role="tabpanel" id="dpanel-win" aria-labelledby="dtab-win" hidden>
+      <p class="cmd-line"><span class="prompt">PS&gt;</span>irm https://github.com/eleodevv/skynative/releases/latest/download/desinstalar.ps1 | iex</p>
+      <button class="copy" type="button" data-copy="irm https://github.com/eleodevv/skynative/releases/latest/download/desinstalar.ps1 | iex" aria-label="Copiar comando de desinstalación para Windows">
+        <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="9" y="9" width="11" height="11" rx="3" /><path d="M5 15V6a3 3 0 0 1 3-3h9" />
+        </svg>
+        <span class="copy-label">Copiar</span>
+      </button>
+    </div>
+  </section>
+</main>
+
+<div class="closing">
+  <p class="caption" style="margin:0">Skynative — Go + Tauri v2 — MIT</p>
+  <div class="closing-links">
+    <a class="link" href="index.html">Inicio</a>
+    <a class="link" href="https://github.com/eleodevv/skynative">Repositorio</a>
+    <a class="link" href="https://github.com/eleodevv/skynative/releases">Releases</a>
+    <a class="link" href="https://github.com/eleodevv/skynative/blob/main/LICENSE">Licencia</a>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* Pestañas por grupo */
+  Array.prototype.slice.call(document.querySelectorAll('[role="tablist"]')).forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    if (!tabs.length) return;
+
+    function select(index, focus) {
+      tabs.forEach(function (tab, i) {
+        var panel = document.getElementById(tab.getAttribute('aria-controls'));
+        var active = i === index;
+        tab.setAttribute('aria-selected', active ? 'true' : 'false');
+        tab.tabIndex = active ? 0 : -1;
+        if (panel) panel.hidden = !active;
+        if (active && focus) tab.focus();
+      });
+    }
+    tabs.forEach(function (tab, index) {
+      tab.addEventListener('click', function () { select(index); });
+      tab.addEventListener('keydown', function (e) {
+        var next = null;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (index + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (index - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') next = 0;
+        else if (e.key === 'End') next = tabs.length - 1;
+        if (next !== null) { e.preventDefault(); select(next, true); }
+      });
+    });
+  });
+
+  /* Copiar */
+  Array.prototype.slice.call(document.querySelectorAll('.copy')).forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var texto = btn.getAttribute('data-copy') || '';
+      var label = btn.querySelector('.copy-label');
+      var original = label ? label.textContent : '';
+
+      function done() {
+        if (label) label.textContent = 'Copiado';
+        window.setTimeout(function () { if (label) label.textContent = original; }, 1600);
+      }
+      function fallback() {
+        var area = document.createElement('textarea');
+        area.value = texto;
+        area.setAttribute('readonly', '');
+        area.style.position = 'absolute';
+        area.style.left = '-9999px';
+        document.body.appendChild(area);
+        area.select();
+        try { document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(area);
+        done();
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texto).then(done, fallback);
+      } else {
+        fallback();
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>
