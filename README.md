@@ -47,6 +47,10 @@ Antes de generar, Skynative **descarga el icono oficial del sitio** (favicon,
 `apple-touch-icon` o `/favicon.ico`, incluidos los ICO) y lo usa como icono de
 la aplicación; si no lo encuentra, dibuja el icono por defecto.
 
+Mientras trabaja, la pantalla de progreso muestra una **barra**, el **tiempo
+transcurrido** y una **estimación del tiempo restante** de cada fase (generar,
+compilar, instalar o instalar herramientas) junto a la salida en vivo.
+
 ### Eliminar aplicaciones
 
 En **Listar proyectos**:
@@ -478,9 +482,9 @@ La aplicación generada carga la URL remota en la WebView del sistema
   todo, ambas con confirmación.
 - **`interno/tui`** — interfaz de terminal: `modelo.go` (estado), `vistas.go`
   (render con Lip Gloss y zonas clicables), `raton.go` (soporte de ratón),
-  `logo.go` (logotipo centrado), `actualizar.go` (`Update`), `acciones.go`
-  (comandos y mensajes), `explorador.go` (selector de carpetas) y `estilos.go`
-  (paleta nativa de la terminal).
+  `progreso.go` (barra y tiempo estimado), `logo.go` (logotipo centrado),
+  `actualizar.go` (`Update`), `acciones.go` (comandos y mensajes),
+  `explorador.go` (selector de carpetas) y `estilos.go` (paleta nativa).
 - **`plantillas`** — archivos de Tauri incrustados con `go:embed`.
 
 ### Convenciones

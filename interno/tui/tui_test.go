@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -496,5 +497,52 @@ func TestEnteroPositivo(t *testing.T) {
 	}
 	if _, err := enteroPositivo("abc", 800); err == nil {
 		t.Error("un valor no numérico debería fallar")
+	}
+}
+
+func TestBarraProgreso(t *testing.T) {
+	if got := barraProgreso(0, 20); !strings.Contains(got, strings.Repeat("░", 20)) {
+		t.Errorf("barra al 0%% inesperada: %q", got)
+	}
+	if got := barraProgreso(1, 20); !strings.Contains(got, strings.Repeat("█", 20)) {
+		t.Errorf("barra al 100%% inesperada: %q", got)
+	}
+	if got := barraProgreso(0.5, 20); !strings.Contains(got, strings.Repeat("█", 10)+strings.Repeat("░", 10)) {
+		t.Errorf("barra al 50%% inesperada: %q", got)
+	}
+}
+
+func TestFormatearDuracion(t *testing.T) {
+	if got := formatearDuracion(45 * time.Second); got != "45s" {
+		t.Errorf("45s formateado como %q", got)
+	}
+	if got := formatearDuracion(92 * time.Second); got != "1m32s" {
+		t.Errorf("92s formateado como %q", got)
+	}
+}
+
+func TestProgresoActualFraccion(t *testing.T) {
+	m := NuevoModelo()
+	if frac, _, _ := m.progresoActual(); frac != 0 {
+		t.Errorf("sin estimación la fracción debe ser 0, fue %v", frac)
+	}
+	m.progresoEstimado = time.Minute
+	m.inicioProgreso = time.Now().Add(-10 * time.Minute)
+	if frac, _, _ := m.progresoActual(); frac != 0.95 {
+		t.Errorf("la fracción debe toparse en 0.95, fue %v", frac)
+	}
+}
+
+func TestLineaProgreso(t *testing.T) {
+	m := NuevoModelo()
+	m.inicioProgreso = time.Now().Add(-1 * time.Minute)
+	m.progresoEstimado = 4 * time.Minute
+	linea := m.lineaProgreso()
+	if !strings.Contains(linea, "transcurridos") || !strings.Contains(linea, "quedan") {
+		t.Errorf("la línea de progreso no incluye los tiempos: %q", linea)
+	}
+	m.inicioProgreso = time.Now().Add(-10 * time.Minute)
+	if linea := m.lineaProgreso(); !strings.Contains(linea, "finalizando") {
+		t.Errorf("esperaba «finalizando» al superar la estimación: %q", linea)
 	}
 }

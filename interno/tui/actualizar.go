@@ -215,6 +215,7 @@ func (m Modelo) ejecutarOpcionMenu() (tea.Model, tea.Cmd) {
 			m.estado = estadoProgreso
 			m.trabajando = true
 			m.detalle = nil
+			m.reiniciarProgreso(estimadoSudo)
 			m.lineas = []string{"Solicitando permisos de administrador (sudo)…"}
 			m.registro.SetContent(strings.Join(m.lineas, "\n"))
 			return m, tea.ExecProcess(herramientas.ComandoElevarPrivilegios(), func(err error) tea.Msg {
@@ -456,6 +457,7 @@ func (m Modelo) lanzarGeneracion() (Modelo, tea.Cmd) {
 	m.estado = estadoProgreso
 	m.trabajando = true
 	m.compilandoAhora = false
+	m.reiniciarProgreso(estimadoGeneracion)
 	m.lineas = []string{
 		"Buscando el icono oficial del sitio…",
 		"Generando el proyecto Tauri v2 en " + m.rutaProyecto + " ...",
@@ -483,6 +485,11 @@ func (m Modelo) iniciarCompilacion() (Modelo, tea.Cmd) {
 	m.instalado = false
 	m.entradaEscritorio = ""
 	m.puedeInstalar = false
+	if m.empaquetar {
+		m.reiniciarProgreso(estimadoEmpaquetar)
+	} else {
+		m.reiniciarProgreso(estimadoCompilar)
+	}
 	m.girador = nuevoGirador()
 	return m, tea.Batch(
 		m.girador.Tick,
@@ -497,6 +504,7 @@ func (m Modelo) iniciarInstalacion() (Modelo, tea.Cmd) {
 	m.trabajando = true
 	m.instalandoAhora = true
 	m.compilandoAhora = false
+	m.reiniciarProgreso(estimadoInstalar)
 	m.lineas = []string{"Instalando «" + m.cfg.Nombre + "» en el menú de aplicaciones…"}
 	m.registro.SetContent(strings.Join(m.lineas, "\n"))
 	m.girador = nuevoGirador()
@@ -526,6 +534,7 @@ func (m Modelo) iniciarInstalacionHerramientas() (Modelo, tea.Cmd) {
 	m.instalandoHerramientas = true
 	m.compilandoAhora = false
 	m.instalandoAhora = false
+	m.reiniciarProgreso(estimadoHerramientas)
 	m.girador = nuevoGirador()
 	return m, tea.Batch(
 		m.girador.Tick,

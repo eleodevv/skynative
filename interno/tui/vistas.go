@@ -227,15 +227,21 @@ func (m Modelo) bloqueProgreso() string {
 	}
 	cabecera := m.girador.View() + " " + estiloTitulo.Render(accion)
 	salida := estiloCaja.Render(m.registro.View())
-	return lipgloss.JoinVertical(lipgloss.Center,
+	lineas := []string{
 		estiloSubtitulo.Render("☁  Skynative está trabajando"),
 		"",
 		cabecera,
 		"",
+	}
+	if barra := m.lineaProgreso(); barra != "" {
+		lineas = append(lineas, barra, "")
+	}
+	lineas = append(lineas,
 		salida,
 		"",
 		estiloAyuda.Render("↑↓ desplazar · rueda del ratón · Esc cancelar"),
 	)
+	return lipgloss.JoinVertical(lipgloss.Center, lineas...)
 }
 
 // bloqueResultado construye la pantalla de resultado con botones de acción.

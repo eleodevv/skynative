@@ -9,6 +9,7 @@ import (
 	"context"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -88,6 +89,10 @@ type Modelo struct {
 	compilandoAhora bool
 	cancelar        context.CancelFunc
 	canalLog        chan string
+
+	// Barra de progreso y tiempo estimado de la fase en curso.
+	inicioProgreso   time.Time
+	progresoEstimado time.Duration
 
 	// Resultado
 	exito         bool
