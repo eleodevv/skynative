@@ -83,6 +83,35 @@ func Agregar(p Proyecto) error {
 		lista = append(lista, p)
 	}
 
+	return guardar(ruta, lista)
+}
+
+// Eliminar quita del registro el proyecto cuya ruta coincide con la indicada.
+// No borra nada del disco: solo deja de rastrear el proyecto.
+func Eliminar(rutaProyecto string) error {
+	ruta, err := rutaRegistro()
+	if err != nil {
+		return err
+	}
+	lista, err := Cargar()
+	if err != nil {
+		return err
+	}
+
+	nueva := make([]Proyecto, 0, len(lista))
+	for _, p := range lista {
+		if p.Ruta != rutaProyecto {
+			nueva = append(nueva, p)
+		}
+	}
+	if len(nueva) == len(lista) {
+		return fmt.Errorf("no hay ningún proyecto registrado con la ruta %q", rutaProyecto)
+	}
+	return guardar(ruta, nueva)
+}
+
+// guardar serializa la lista en el archivo de registro.
+func guardar(ruta string, lista []Proyecto) error {
 	datos, err := json.MarshalIndent(lista, "", "  ")
 	if err != nil {
 		return fmt.Errorf("no se pudo serializar el registro: %w", err)

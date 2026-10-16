@@ -12,6 +12,7 @@ import (
 
 	"github.com/skynative/skynative/interno/configuracion"
 	"github.com/skynative/skynative/interno/generador"
+	"github.com/skynative/skynative/interno/proyectos"
 )
 
 // TestProgramaArrancaYSale demuestra que el bucle de Bubble Tea se inicia y
@@ -134,13 +135,25 @@ func TestMenuNavegacion(t *testing.T) {
 	}
 }
 
-// TestOpcionInstalarHerramientas comprueba que la opción del menú inicia la
-// instalación de dependencias externas.
+// TestOpcionInstalarHerramientas comprueba que la opción del menú prepara la
+// instalación de dependencias externas (o la petición de sudo).
 func TestOpcionInstalarHerramientas(t *testing.T) {
 	m := NuevoModelo()
 	m.opcionMenu = 1
-	actualizado, _ := m.ejecutarOpcionMenu()
+	actualizado, cmd := m.ejecutarOpcionMenu()
 	m = actualizado.(Modelo)
+	if m.estado != estadoProgreso {
+		t.Fatalf("debería pasar a progreso, estado = %v", m.estado)
+	}
+	if cmd == nil {
+		t.Fatal("debería devolverse un comando")
+	}
+}
+
+// TestIniciarInstalacionHerramientas comprueba el arranque del instalador.
+func TestIniciarInstalacionHerramientas(t *testing.T) {
+	m := NuevoModelo()
+	m, _ = m.iniciarInstalacionHerramientas()
 	if m.estado != estadoProgreso || !m.instalandoHerramientas {
 		t.Fatalf("debería iniciar la instalación de herramientas, estado = %v", m.estado)
 	}
@@ -303,6 +316,46 @@ func TestVistasNoVacias(t *testing.T) {
 		if strings.TrimSpace(m.View()) == "" {
 			t.Errorf("la vista del estado %v está vacía", e)
 		}
+	}
+}
+
+// TestEliminarProyectoDesdeLista comprueba la confirmación y el borrado del
+// registro desde la pantalla de proyectos.
+func TestEliminarProyectoDesdeLista(t *testing.T) {
+	t.Setenv("SKYNATIVE_DIRECTORIO_CONFIG", t.TempDir())
+	m := NuevoModelo()
+	m.proyectos = []proyectos.Proyecto{{Nombre: "Uno", Ruta: "/tmp/uno"}}
+	m.estado = estadoLista
+
+	m = aplicar(m, runas("d"))
+	if !m.confirmandoEliminar {
+		t.Fatal("D debería pedir confirmación")
+	}
+	m = aplicar(m, runas("n"))
+	if m.confirmandoEliminar {
+		t.Fatal("N debería cancelar la eliminación")
+	}
+
+	// Un segundo intento con confirmación devuelve el comando de borrado.
+	m = aplicar(m, runas("d"))
+	_, cmd := m.Update(runas("s"))
+	if cmd == nil {
+		t.Fatal("confirmar debería devolver un comando de borrado")
+	}
+}
+
+// TestListaNavegacionNoSaleDeRango comprueba que la selección no se pasa.
+func TestListaNavegacionNoSaleDeRango(t *testing.T) {
+	m := NuevoModelo()
+	m.proyectos = []proyectos.Proyecto{{Nombre: "Uno", Ruta: "/tmp/uno"}}
+	m.estado = estadoLista
+	m = aplicar(m, tecla(tea.KeyDown))
+	if m.indiceProyecto != 0 {
+		t.Errorf("el índice no debería pasar del final, es %d", m.indiceProyecto)
+	}
+	m = aplicar(m, tecla(tea.KeyUp))
+	if m.indiceProyecto != 0 {
+		t.Errorf("el índice no debería ser negativo, es %d", m.indiceProyecto)
 	}
 }
 

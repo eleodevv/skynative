@@ -135,3 +135,61 @@ func TestCompilarConComandoFalso(t *testing.T) {
 		t.Errorf("artefactos inesperados: %v", res.Artefactos)
 	}
 }
+
+// TestUltimasLineas comprueba el recorte de la salida.
+func TestUltimasLineas(t *testing.T) {
+	salida := "línea1\n\nlínea2\r\nlínea3\nlínea4\n"
+	lineas := UltimasLineas(salida, 2)
+	if len(lineas) != 2 || lineas[0] != "línea3" || lineas[1] != "línea4" {
+		t.Errorf("recorte inesperado: %v", lineas)
+	}
+	if len(UltimasLineas("solo\n", 5)) != 1 {
+		t.Error("no debería recortar cuando hay menos líneas que el límite")
+	}
+}
+
+// TestCompilarReintentaSinBundle verifica que, si el empaquetado falla, se
+// reintenta con --no-bundle y se obtienen los artefactos.
+func TestCompilarReintentaSinBundle(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("el guion de prueba requiere sh")
+	}
+
+	base := t.TempDir()
+	srcTauri := filepath.Join(base, "src-tauri")
+	if err := os.MkdirAll(srcTauri, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(srcTauri, "tauri.conf.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	dirRelease := filepath.Join(srcTauri, "target", "release")
+	binario := filepath.Join(dirRelease, "app")
+	// Falla si no se pasa --no-bundle; en caso contrario crea el binario.
+	guion := "#!/bin/sh\n" +
+		"case \" $* \" in\n" +
+		"  *--no-bundle*) ;;\n" +
+		"  *) echo 'fallo de empaquetado' >&2; exit 1 ;;\n" +
+		"esac\n" +
+		"mkdir -p '" + dirRelease + "'\n: > '" + binario + "'\nchmod +x '" + binario + "'\nexit 0\n"
+	rutaGuion := filepath.Join(base, "tauri-falso.sh")
+	if err := os.WriteFile(rutaGuion, []byte(guion), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	var registro strings.Builder
+	res, err := Compilar(context.Background(), base, Opciones{ComandoTauri: rutaGuion}, &registro)
+	if err != nil {
+		t.Fatalf("Compilar debería reintentar sin empaquetado: %v", err)
+	}
+	if !res.EmpaquetadoOmitido {
+		t.Error("se esperaba EmpaquetadoOmitido = true")
+	}
+	if !strings.Contains(registro.String(), "--no-bundle") {
+		t.Error("no se registró el reintento sin empaquetado")
+	}
+	if len(res.Artefactos) != 1 || res.Artefactos[0] != binario {
+		t.Errorf("artefactos inesperados: %v", res.Artefactos)
+	}
+}

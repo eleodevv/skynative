@@ -234,6 +234,11 @@ func (m Modelo) vistaResultado() string {
 		}
 	}
 
+	if len(m.detalle) > 0 {
+		b.WriteString("\n" + estiloEtiquetaCampo.Render("Últimas líneas de la salida") + "\n")
+		b.WriteString(estiloCaja.Render(strings.Join(m.detalle, "\n")) + "\n")
+	}
+
 	var ayudas []string
 	if m.puedeCompilar && m.exito {
 		ayudas = append(ayudas, "C compilar")
@@ -257,18 +262,29 @@ func (m Modelo) vistaLista() string {
 	var b strings.Builder
 	if len(m.proyectos) == 0 {
 		b.WriteString("Todavía no hay proyectos.\nCrea uno desde el menú principal.")
-	} else {
-		for i, p := range m.proyectos {
-			if i > 0 {
-				b.WriteString("\n")
-			}
-			b.WriteString(estiloMarca.Render(p.Nombre) + "\n")
-			b.WriteString("  " + estiloEtiquetaCampo.Render("identificador  ") + p.Identificador + "\n")
-			b.WriteString("  " + estiloEtiquetaCampo.Render("url            ") + p.URL + "\n")
-			b.WriteString("  " + estiloEtiquetaCampo.Render("ruta           ") + estiloRuta.Render(p.Ruta) + "\n")
-		}
+		cuerpo := b.String() + estiloAyuda.Render("\nEsc volver al menú")
+		return panel("Proyectos registrados", cuerpo)
 	}
-	cuerpo := b.String() + estiloAyuda.Render("\nEsc volver al menú")
+
+	for i, p := range m.proyectos {
+		if i > 0 {
+			b.WriteString("\n")
+		}
+		nombre := estiloMarca.Render(p.Nombre)
+		if i == m.indiceProyecto {
+			nombre = estiloSeleccion.Render("❯ " + p.Nombre)
+		}
+		b.WriteString(nombre + "\n")
+		b.WriteString("  " + estiloEtiquetaCampo.Render("identificador  ") + p.Identificador + "\n")
+		b.WriteString("  " + estiloEtiquetaCampo.Render("url            ") + p.URL + "\n")
+		b.WriteString("  " + estiloEtiquetaCampo.Render("ruta           ") + estiloRuta.Render(p.Ruta) + "\n")
+	}
+
+	ayuda := "\n↑↓ elegir · D eliminar del registro · Esc volver al menú"
+	if m.confirmandoEliminar {
+		ayuda = "\n" + estiloAviso.Render("¿Eliminar «"+m.proyectos[m.indiceProyecto].Nombre+"» del registro? (no borra archivos)  s/n")
+	}
+	cuerpo := b.String() + estiloAyuda.Render(ayuda)
 	return panel("Proyectos registrados", cuerpo)
 }
 

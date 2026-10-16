@@ -65,6 +65,32 @@ func TestAgregarReemplazaPorRuta(t *testing.T) {
 	}
 }
 
+func TestEliminar(t *testing.T) {
+	t.Setenv("SKYNATIVE_DIRECTORIO_CONFIG", t.TempDir())
+	ruta := filepath.Join(t.TempDir(), "proyecto")
+
+	if err := Agregar(Proyecto{Nombre: "Uno", Ruta: "/tmp/uno"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := Agregar(Proyecto{Nombre: "Dos", Ruta: ruta}); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := Eliminar(ruta); err != nil {
+		t.Fatalf("Eliminar devolvió error: %v", err)
+	}
+	lista, err := Listar()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(lista) != 1 || lista[0].Ruta != "/tmp/uno" {
+		t.Fatalf("no se eliminó la entrada correcta: %v", lista)
+	}
+	if err := Eliminar(ruta); err == nil {
+		t.Error("eliminar una ruta inexistente debería devolver error")
+	}
+}
+
 func TestRegistroDanado(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("SKYNATIVE_DIRECTORIO_CONFIG", dir)

@@ -207,6 +207,29 @@ func sudoSinPassword() bool {
 	return exec.Command("sudo", "-n", "true").Run() == nil
 }
 
+// NecesitaSudo indica si el plan requiere elevar privilegios con sudo y las
+// credenciales no están cacheadas todavía. En ese caso hay que pedir la
+// contraseña antes de ejecutar el plan.
+func NecesitaSudo() bool {
+	if runtime.GOOS != "linux" || esRoot() {
+		return false
+	}
+	if DetectarGestor() == "" {
+		return false
+	}
+	if _, err := exec.LookPath("sudo"); err != nil {
+		return false
+	}
+	return !sudoSinPassword()
+}
+
+// ComandoElevarPrivilegios devuelve el comando interactivo para cachear las
+// credenciales de sudo. Debe ejecutarse con una terminal adjunta (por ejemplo,
+// tea.ExecProcess) para poder pedir la contraseña.
+func ComandoElevarPrivilegios() *exec.Cmd {
+	return exec.Command("sudo", "-v")
+}
+
 // Instalar ejecuta los pasos en orden escribiendo el progreso en log.
 func Instalar(ctx context.Context, pasos []Paso, log io.Writer) error {
 	if log == nil {

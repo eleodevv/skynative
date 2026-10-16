@@ -23,6 +23,8 @@ import (
 type Opciones struct {
 	// Depuracion compila en modo de depuración (cargo tauri build --debug).
 	Depuracion bool
+	// SinBundle compila solo el binario, sin generar paquetes de instalación.
+	SinBundle bool
 	// ComandoTauri permite forzar la ruta del ejecutable de la CLI de Tauri.
 	ComandoTauri string
 }
@@ -35,6 +37,9 @@ type Resultado struct {
 	Artefactos []string
 	// Salida contiene la salida combinada de la compilación.
 	Salida string
+	// EmpaquetadoOmitido indica que se generó solo el binario porque el
+	// empaquetado falló (por ejemplo, por falta de rpmbuild o linuxdeploy).
+	EmpaquetadoOmitido bool
 }
 
 // Compilar lanza la compilación de Tauri del proyecto situado en rutaProyecto.
@@ -42,12 +47,39 @@ type Resultado struct {
 // rutaProyecto puede ser la raíz del proyecto (que contiene src-tauri) o el
 // propio directorio src-tauri. Si log no es nil, la salida se escribe además en
 // ese destino para mostrar el progreso en tiempo real.
+//
+// Primero intenta la compilación completa (con empaquetado). Si falla y no se
+// pidió «SinBundle», reintenta con --no-bundle: así se obtiene siempre el
+// binario aunque el empaquetado nativo no esté disponible en el sistema.
 func Compilar(ctx context.Context, rutaProyecto string, op Opciones, log io.Writer) (Resultado, error) {
 	dirSrcTauri, err := localizarSrcTauri(rutaProyecto)
 	if err != nil {
 		return Resultado{}, err
 	}
+	if log == nil {
+		log = io.Discard
+	}
 
+	res, err := ejecutar(ctx, dirSrcTauri, op, log)
+	if err == nil || op.SinBundle {
+		return res, err
+	}
+
+	fmt.Fprintln(log, "")
+	fmt.Fprintln(log, "La compilación con empaquetado falló; reintentando sin empaquetado (--no-bundle)…")
+	op2 := op
+	op2.SinBundle = true
+	res2, err2 := ejecutar(ctx, dirSrcTauri, op2, log)
+	if err2 != nil {
+		// Devolvemos el error original (el del empaquetado) por ser más informativo.
+		return res, err
+	}
+	res2.EmpaquetadoOmitido = true
+	return res2, nil
+}
+
+// ejecutar lanza una única compilación con las opciones indicadas.
+func ejecutar(ctx context.Context, dirSrcTauri string, op Opciones, log io.Writer) (Resultado, error) {
 	nombre, argsBase, err := comandoTauri(op.ComandoTauri)
 	if err != nil {
 		return Resultado{}, err
@@ -56,9 +88,8 @@ func Compilar(ctx context.Context, rutaProyecto string, op Opciones, log io.Writ
 	if op.Depuracion {
 		args = append(args, "--debug")
 	}
-
-	if log == nil {
-		log = io.Discard
+	if op.SinBundle {
+		args = append(args, "--no-bundle")
 	}
 
 	var buf bytes.Buffer
@@ -78,6 +109,22 @@ func Compilar(ctx context.Context, rutaProyecto string, op Opciones, log io.Writ
 		return Resultado{Salida: buf.String()}, err
 	}
 	return Resultado{CodigoSalida: 0, Artefactos: artefactos, Salida: buf.String()}, nil
+}
+
+// UltimasLineas devuelve las últimas n líneas no vacías de una salida.
+func UltimasLineas(salida string, n int) []string {
+	lineas := strings.Split(strings.ReplaceAll(salida, "\r\n", "\n"), "\n")
+	var limpias []string
+	for _, l := range lineas {
+		l = strings.TrimRight(l, "\r ")
+		if strings.TrimSpace(l) != "" {
+			limpias = append(limpias, l)
+		}
+	}
+	if n > 0 && len(limpias) > n {
+		limpias = limpias[len(limpias)-n:]
+	}
+	return limpias
 }
 
 // comandoTauri decide cómo invocar la CLI de Tauri.

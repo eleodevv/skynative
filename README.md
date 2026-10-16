@@ -431,7 +431,10 @@ La aplicación generada carga la URL remota en la WebView del sistema
 - **`interno/diagnostico`** — `Ejecutar` comprueba Go, Rust, Cargo, la CLI de
   Tauri y las dependencias por plataforma.
 - **`interno/proyectos`** — registro JSON en el directorio de configuración del
-  usuario (`SKYNATIVE_DIRECTORIO_CONFIG` lo sobrescribe).
+  usuario (`SKYNATIVE_DIRECTORIO_CONFIG` lo sobrescribe). `Eliminar` quita una
+  entrada del registro sin borrar archivos. En la pantalla **Listar proyectos**
+  la tecla `D` pide confirmación y elimina el proyecto seleccionado del registro
+  (no toca sus archivos ni la aplicación instalada).
 - **`interno/tui`** — interfaz de terminal: `modelo.go` (estado), `vistas.go`
   (render con Lip Gloss), `logo.go` (logotipo centrado), `actualizar.go`
   (`Update`), `acciones.go` (comandos y mensajes), `explorador.go` (selector de

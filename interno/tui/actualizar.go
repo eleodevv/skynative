@@ -9,8 +9,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/skynative/skynative/interno/compilador"
 	"github.com/skynative/skynative/interno/configuracion"
 	"github.com/skynative/skynative/interno/diagnostico"
+	"github.com/skynative/skynative/interno/herramientas"
 	"github.com/skynative/skynative/interno/instalador"
 	"github.com/skynative/skynative/interno/version"
 )
@@ -56,14 +58,29 @@ func (m Modelo) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.actualizarChequeoHerramientas(msg)
 	case msgHerramientasInstaladas:
 		return m.actualizarHerramientasInstaladas(msg)
+	case msgSudoElevado:
+		m.trabajando = false
+		if msg.err != nil {
+			m.exito = false
+			m.resumen = "No se pudieron obtener permisos de administrador: " + msg.err.Error()
+			m.estado = estadoResultado
+			return m, nil
+		}
+		return m.iniciarInstalacionHerramientas()
 	case msgDiagnostico:
 		m.diagnosticos = msg
 		m.estado = estadoDiagnostico
 		return m, nil
 	case msgProyectos:
 		m.proyectos = msg
+		if m.indiceProyecto >= len(m.proyectos) {
+			m.indiceProyecto = max(0, len(m.proyectos)-1)
+		}
+		m.confirmandoEliminar = false
 		m.estado = estadoLista
 		return m, nil
+	case msgProyectoEliminado:
+		return m, proyectosCmd()
 	case msgError:
 		m.exito = false
 		m.resumen = msg.err.Error()
@@ -92,11 +109,49 @@ func (m Modelo) actualizarTecla(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.actualizarProgreso(msg)
 	case estadoResultado:
 		return m.actualizarResultado(msg)
-	case estadoLista, estadoDiagnostico:
+	case estadoLista:
+		return m.actualizarLista(msg)
+	case estadoDiagnostico:
 		if msg.String() == "esc" || msg.String() == "q" || msg.String() == "enter" {
 			m.estado = estadoMenu
 		}
 		return m, nil
+	}
+	return m, nil
+}
+
+// actualizarLista gestiona la pantalla de proyectos: navegación y borrado del
+// registro.
+func (m Modelo) actualizarLista(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.confirmandoEliminar {
+		switch msg.String() {
+		case "s", "y", "enter":
+			m.confirmandoEliminar = false
+			if m.indiceProyecto < 0 || m.indiceProyecto >= len(m.proyectos) {
+				return m, nil
+			}
+			return m, eliminarProyectoCmd(m.proyectos[m.indiceProyecto])
+		case "n", "esc", "q":
+			m.confirmandoEliminar = false
+		}
+		return m, nil
+	}
+
+	switch msg.String() {
+	case "esc", "q":
+		m.estado = estadoMenu
+	case "up", "k":
+		if m.indiceProyecto > 0 {
+			m.indiceProyecto--
+		}
+	case "down", "j":
+		if m.indiceProyecto < len(m.proyectos)-1 {
+			m.indiceProyecto++
+		}
+	case "d", "delete":
+		if len(m.proyectos) > 0 {
+			m.confirmandoEliminar = true
+		}
 	}
 	return m, nil
 }
@@ -128,6 +183,16 @@ func (m Modelo) ejecutarOpcionMenu() (tea.Model, tea.Cmd) {
 		m.enfocar()
 		return m, textinputBlink()
 	case 1:
+		if herramientas.NecesitaSudo() {
+			m.estado = estadoProgreso
+			m.trabajando = true
+			m.detalle = nil
+			m.lineas = []string{"Solicitando permisos de administrador (sudo)…"}
+			m.registro.SetContent(strings.Join(m.lineas, "\n"))
+			return m, tea.ExecProcess(herramientas.ComandoElevarPrivilegios(), func(err error) tea.Msg {
+				return msgSudoElevado{err: err}
+			})
+		}
 		return m.iniciarInstalacionHerramientas()
 	case 2:
 		return m, proyectosCmd()
@@ -423,6 +488,7 @@ func (m Modelo) iniciarInstalacionHerramientas() (Modelo, tea.Cmd) {
 // actualizarGenerado procesa el fin de la generación.
 func (m Modelo) actualizarGenerado(msg msgGenerado) (tea.Model, tea.Cmd) {
 	m.trabajando = false
+	m.detalle = nil
 	if msg.err != nil {
 		m.exito = false
 		m.puedeCompilar = false
@@ -484,11 +550,13 @@ func (m Modelo) actualizarCompilado(msg msgCompilado) (tea.Model, tea.Cmd) {
 	if msg.err != nil {
 		m.exito = false
 		m.resumen = "La compilación falló: " + msg.err.Error()
+		m.detalle = compilador.UltimasLineas(msg.res.Salida, 14)
 		m.puedeCompilar = true
 		m.estado = estadoResultado
 		return m, nil
 	}
 	m.exito = true
+	m.detalle = nil
 	m.puedeCompilar = false
 	m.artefactos = msg.res.Artefactos
 	m.rutaEjecutable = detectarEjecutable(m.cfg, m.rutaProyecto, msg.res.Artefactos)
@@ -496,6 +564,8 @@ func (m Modelo) actualizarCompilado(msg msgCompilado) (tea.Model, tea.Cmd) {
 	m.puedeInstalar = m.rutaEjecutable != "" || m.bundleApp != ""
 	if len(msg.res.Artefactos) == 0 {
 		m.resumen = "Compilación terminada, pero no se encontraron artefactos."
+	} else if msg.res.EmpaquetadoOmitido {
+		m.resumen = fmt.Sprintf("Compilación terminada sin empaquetado (el empaquetado nativo falló). %d artefacto(s).", len(msg.res.Artefactos))
 	} else {
 		m.resumen = fmt.Sprintf("Compilación terminada. %d artefacto(s) generados.", len(msg.res.Artefactos))
 	}
@@ -507,6 +577,7 @@ func (m Modelo) actualizarCompilado(msg msgCompilado) (tea.Model, tea.Cmd) {
 func (m Modelo) actualizarInstalado(msg msgInstalado) (tea.Model, tea.Cmd) {
 	m.trabajando = false
 	m.instalandoAhora = false
+	m.detalle = nil
 	if msg.err != nil {
 		m.exito = false
 		m.puedeInstalar = m.rutaEjecutable != "" || m.bundleApp != ""

@@ -37,8 +37,10 @@ type (
 	}
 	msgChequeoHerramientas    []diagnostico.Estado
 	msgHerramientasInstaladas struct{ err error }
+	msgSudoElevado            struct{ err error }
 	msgDiagnostico            []diagnostico.Estado
 	msgProyectos              []proyectos.Proyecto
+	msgProyectoEliminado      struct{}
 	msgError                  struct{ err error }
 )
 
@@ -158,6 +160,16 @@ func proyectosCmd() tea.Cmd {
 			return msgError{err: err}
 		}
 		return msgProyectos(lista)
+	}
+}
+
+// eliminarProyectoCmd quita un proyecto del registro (no borra sus archivos).
+func eliminarProyectoCmd(p proyectos.Proyecto) tea.Cmd {
+	return func() tea.Msg {
+		if err := proyectos.Eliminar(p.Ruta); err != nil {
+			return msgError{err: err}
+		}
+		return msgProyectoEliminado{}
 	}
 }
 

@@ -90,6 +90,7 @@ type Modelo struct {
 	// Resultado
 	exito         bool
 	resumen       string
+	detalle       []string
 	rutaProyecto  string
 	artefactos    []string
 	puedeCompilar bool
@@ -109,8 +110,10 @@ type Modelo struct {
 	instalandoHerramientas bool
 
 	// Listas
-	diagnosticos []diagnostico.Estado
-	proyectos    []proyectos.Proyecto
+	diagnosticos        []diagnostico.Estado
+	proyectos           []proyectos.Proyecto
+	indiceProyecto      int
+	confirmandoEliminar bool
 }
 
 // NuevoModelo construye el modelo inicial.

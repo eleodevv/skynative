@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"text/template"
 
 	"github.com/skynative/skynative/interno/configuracion"
@@ -242,6 +243,21 @@ type tauriBundle struct {
 	Icon             []string `json:"icon"`
 }
 
+// objetivosBundle elige el empaquetado más fiable para el sistema de
+// compilación. Se evita "all" porque incluye objetivos que suelen fallar por
+// falta de herramientas (rpmbuild, linuxdeploy…); si el empaquetado falla, el
+// compilador reintenta automáticamente con --no-bundle.
+func objetivosBundle(so string) string {
+	switch so {
+	case "darwin":
+		return "app"
+	case "windows":
+		return "nsis"
+	default:
+		return "deb"
+	}
+}
+
 // construirTauriConf genera la configuración de Tauri v2 para la aplicación.
 func construirTauriConf(cfg configuracion.Configuracion) tauriConf {
 	return tauriConf{
@@ -263,7 +279,7 @@ func construirTauriConf(cfg configuracion.Configuracion) tauriConf {
 		},
 		Bundle: tauriBundle{
 			Active:           true,
-			Targets:          "all",
+			Targets:          objetivosBundle(runtime.GOOS),
 			Category:         "Utility",
 			ShortDescription: "Aplicación de escritorio generada con Skynative",
 			Icon: []string{
