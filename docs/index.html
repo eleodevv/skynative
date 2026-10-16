@@ -3,581 +3,1403 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Skynative — tu web, con cielo propio</title>
-<meta name="description" content="Skynative convierte una URL web en una aplicación de escritorio con Tauri v2. Instálalo con un comando." />
+<title>Skynative — Tu web, con un cielo propio</title>
+<meta name="description" content="Skynative convierte una URL en una aplicación de escritorio nativa con Tauri v2. Ligera, multiplataforma y a un solo comando." />
 <meta name="color-scheme" content="dark" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d1c9ff' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17.5 19a4.5 4.5 0 0 0 .4-8.98A6 6 0 0 0 6.2 11.3 4 4 0 0 0 7 19z'/%3E%3C/svg%3E" />
+<meta name="theme-color" content="#0b0f1a" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b9b8ff' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17.5 19a4.5 4.5 0 0 0 .4-8.98A6 6 0 0 0 6.2 11.3 4 4 0 0 0 7 19z'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <style>
   :root {
-    /* Colors */
-    --iris: #847dff;
-    --cyan: #00b3dd;
-    --pale-iris: #d1c9ff;
-    --deep-iris: #4b49aa;
-    --orchid: #dd90d8;
-    --periwinkle: #90b8f0;
-    --obsidian: #0f1011;
-    --abyss: #090a0b;
-    --graphite: #2e2e2e;
-    --steel: #3f4041;
-    --silver: #cacaca;
-    --fog: #6a6b6b;
-    --ash: #9f9fa0;
-    --cloud: #f5f5f7;
-    --pure: #ffffff;
-    --void: #000000;
+    --color-midnight: #0b0f1a;
+    --color-cobalt: #1e3a8a;
+    --color-sky: #1e88c8;
+    --color-cloud: #ffffff;
+    --color-mist: #dbe7ff;
+    --color-lavender: #b9b8ff;
 
-    /* Type */
-    --serif: 'DM Serif Display', ui-serif, Georgia, 'Times New Roman', serif;
-    --sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    --mono: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --glass-fill: rgba(255, 255, 255, 0.08);
+    --glass-fill-strong: rgba(255, 255, 255, 0.14);
+    --glass-border: rgba(255, 255, 255, 0.18);
 
-    /* Shape */
-    --radius: 8px;
-    --radius-card: 16px;
-    --radius-tile: 30px;
+    --font-display: 'DM Serif Display', Georgia, 'Times New Roman', serif;
+    --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-code: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
-    /* Layout */
-    --page: 1200px;
-    --gap: 12px;
-    --section: 80px;
+    --radius-card: 20px;
+    --radius-code: 16px;
+    --radius-button: 10px;
+    --radius-pill: 9999px;
+
+    --page-max-width: 1100px;
+    --section-gap: 120px;
+
+    --shadow-soft: 0 24px 60px rgba(0, 0, 0, 0.15);
+    --shadow-cloud: 0 14px 30px rgba(90, 111, 187, 0.45);
+
+    --sky: 0;
   }
 
-  * { box-sizing: border-box; }
+  *, *::before, *::after { box-sizing: border-box; }
 
-  html { background: var(--obsidian); }
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 96px;
+    background: var(--color-midnight);
+    -webkit-text-size-adjust: 100%;
+  }
 
   body {
     margin: 0;
-    background: var(--obsidian);
-    color: var(--cloud);
-    font-family: var(--sans);
-    font-weight: 400;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background: var(--color-midnight);
+    color: var(--color-cloud);
+    font-family: var(--font-ui);
     font-size: 16px;
+    font-weight: 400;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
 
-  a { color: inherit; }
+  a { color: inherit; text-decoration: none; }
+  img, svg { display: block; }
+  button { font: inherit; color: inherit; }
+
+  :focus-visible {
+    outline: 2px solid var(--color-lavender);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
 
   .wrap {
     width: 100%;
-    max-width: var(--page);
+    max-width: var(--page-max-width);
     margin: 0 auto;
     padding: 0 24px;
   }
 
-  .mono {
-    font-family: var(--mono);
+  .skip {
+    position: absolute;
+    left: 16px; top: -60px;
+    z-index: 100;
+    padding: 10px 16px;
+    background: var(--color-cloud);
+    color: var(--color-midnight);
+    border-radius: var(--radius-button);
     font-weight: 500;
-    font-size: 11px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
+    transition: top .2s ease;
+  }
+  .skip:focus { top: 16px; }
+
+  /* ---------- Cielo (surfaces level 0) ---------- */
+  .sky {
+    position: fixed;
+    inset: 0;
+    z-index: -3;
+    overflow: hidden;
+    background: var(--color-midnight);
+  }
+  .sky::before {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; top: 0;
+    height: 220vh;
+    background: linear-gradient(180deg,
+      #0b0f1a 0%,
+      #101a33 15%,
+      #1e3a8a 45%,
+      #2a63a8 72%,
+      #1e88c8 100%);
+    transform: translate3d(0, calc(var(--sky) * -1vh), 0);
+    will-change: transform;
+  }
+  .sky::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(120% 70% at 50% 0%, rgba(30, 58, 138, 0.30), transparent 65%);
+    pointer-events: none;
   }
 
-  /* ---------- Nav ---------- */
+  /* ---------- Nubes (surfaces level 1) ---------- */
+  .cloudfield {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .cloud {
+    position: absolute;
+    will-change: transform;
+  }
+  .cloud svg { width: 100%; height: auto; }
+  .cloud-drift {
+    animation: drift 96s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+  .cloud--far { filter: blur(6px); opacity: .45; }
+  .cloud--mid { filter: blur(3px); opacity: .68; }
+  .cloud--near { filter: blur(1.2px); opacity: .9; }
+
+  @keyframes drift {
+    from { transform: translateX(-18px); }
+    to   { transform: translateX(58px); }
+  }
+
+  .defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+  /* ---------- Banco de nubes (separador) ---------- */
+  .bank {
+    position: relative;
+    height: 170px;
+    pointer-events: none;
+    background-repeat: no-repeat;
+    background-image:
+      radial-gradient(16% 80% at 6% 105%, rgba(255,255,255,.92) 0 60%, rgba(255,255,255,0) 100%),
+      radial-gradient(12% 62% at 18% 107%, rgba(255,255,255,.82) 0 58%, rgba(255,255,255,0) 100%),
+      radial-gradient(21% 90% at 34% 109%, rgba(255,255,255,.98) 0 62%, rgba(255,255,255,0) 100%),
+      radial-gradient(14% 70% at 50% 106%, rgba(255,255,255,.88) 0 60%, rgba(255,255,255,0) 100%),
+      radial-gradient(19% 84% at 66% 108%, rgba(255,255,255,.94) 0 60%, rgba(255,255,255,0) 100%),
+      radial-gradient(12% 58% at 80% 106%, rgba(255,255,255,.82) 0 58%, rgba(255,255,255,0) 100%),
+      radial-gradient(16% 76% at 94% 107%, rgba(255,255,255,.9) 0 60%, rgba(255,255,255,0) 100%);
+    filter: blur(4px);
+  }
+
+  /* ---------- Navbar glass ---------- */
   .nav {
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    background: rgba(15, 16, 17, 0.62);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 60;
+    height: 72px;
+    background: var(--glass-fill);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--glass-border);
   }
   .nav-inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 20px;
-    height: 68px;
+    height: 72px;
   }
   .brand {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 10px;
-    font-family: var(--serif);
-    font-size: 20px;
-    text-decoration: none;
-    color: var(--pure);
+    font-family: var(--font-display);
+    font-size: 22px;
+    line-height: 1;
+    color: var(--color-cloud);
   }
-  .brand svg { width: 22px; height: 22px; }
-  .nav-links { display: flex; align-items: center; gap: 4px; }
-  .nav-links a {
+  .brand svg { width: 24px; height: 24px; }
+  .nav-links { display: flex; align-items: center; gap: 6px; }
+  .nav-links > a {
     font-size: 14px;
-    color: var(--ash);
-    text-decoration: none;
+    font-weight: 500;
+    color: var(--color-mist);
     padding: 9px 14px;
-    border-radius: var(--radius);
+    border-radius: var(--radius-button);
     transition: color .2s ease, background-color .2s ease;
   }
-  .nav-links a:hover { color: var(--pure); background: rgba(255, 255, 255, 0.06); }
+  .nav-links > a:hover { color: var(--color-cloud); background: var(--glass-fill); }
 
-  /* ---------- Buttons ---------- */
+  /* ---------- Botones ---------- */
   .btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
-    font-family: var(--sans);
-    font-size: 16px;
-    line-height: 1;
-    padding: 12px 18px;
-    border-radius: var(--radius);
+    padding: 12px 20px;
+    border-radius: var(--radius-button);
     border: 1px solid transparent;
-    text-decoration: none;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1;
     cursor: pointer;
-    transition: background-color .2s ease, border-color .2s ease, color .2s ease;
+    transition: transform .22s ease, background-color .22s ease,
+                border-color .22s ease, box-shadow .22s ease, color .22s ease;
   }
-  .btn-primary { background: var(--pure); color: var(--void); }
-  .btn-primary:hover { background: #dcdcdc; }
-  .btn-ghost { border-color: rgba(255,255,255,0.28); color: var(--pure); background: transparent; }
-  .btn-ghost:hover { border-color: var(--pure); }
-  .btn-sm { font-size: 13px; padding: 9px 14px; }
+  .btn-primary {
+    background: var(--color-cloud);
+    color: var(--color-midnight);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 34px rgba(255, 255, 255, 0.28);
+  }
+  .btn-ghost {
+    background: transparent;
+    border-color: var(--glass-border);
+    color: var(--color-cloud);
+  }
+  .btn-ghost:hover { background: var(--glass-fill); border-color: rgba(255,255,255,.35); }
+  .btn-sm { font-size: 14px; padding: 9px 16px; }
+  .btn-nav { border-color: rgba(185, 184, 255, 0.55); }
+  .btn-nav:hover { background: rgba(185, 184, 255, 0.14); border-color: var(--color-lavender); }
+
+  /* ---------- Eyebrow / badge ---------- */
+  .eyebrow {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-mist);
+  }
+  .badge {
+    display: inline-block;
+    padding: 9px 20px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-pill);
+    background: var(--glass-fill);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-cloud);
+    margin-bottom: 28px;
+  }
+
+  /* ---------- Tipografía display ---------- */
+  .display {
+    font-family: var(--font-display);
+    font-weight: 400;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  .display em { font-style: italic; color: var(--color-lavender); }
 
   /* ---------- Hero ---------- */
   .hero {
     position: relative;
     overflow: hidden;
-    background: linear-gradient(rgb(15,16,17), rgb(19,29,39) 18%, rgb(26,71,136) 37%, rgb(64,138,193) 69%, rgb(64,138,193) 102%);
+    padding: 168px 0 40px;
     text-align: center;
-    padding: 116px 0 132px;
   }
-  .hero::after {
-    content: "";
-    position: absolute;
-    inset: auto 0 0 0;
-    height: 180px;
-    background: linear-gradient(transparent, var(--obsidian));
-    pointer-events: none;
-  }
-  .hero .wrap { position: relative; z-index: 1; }
-  .pill {
-    display: inline-block;
-    font-family: var(--mono);
-    font-weight: 500;
-    font-size: 11px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--cloud);
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 9999px;
-    padding: 10px 32px;
-    margin-bottom: 28px;
-  }
-  h1 {
+  .hero-inner { position: relative; z-index: 2; }
+  .hero h1 {
+    max-width: 18ch;
     margin: 0 auto;
-    max-width: 16ch;
-    font-family: var(--serif);
-    font-weight: 400;
-    font-size: clamp(44px, 9vw, 96px);
-    line-height: 0.9;
-    color: var(--pure);
-    letter-spacing: -0.01em;
+    font-size: clamp(44px, 8vw, 72px);
+    color: var(--color-cloud);
   }
-  h1 em { font-style: italic; }
-  .hero p {
-    margin: 26px auto 0;
-    max-width: 560px;
-    font-weight: 300;
+  .hero-sub {
+    max-width: 620px;
+    margin: 24px auto 0;
     font-size: 18px;
-    line-height: 1.5;
-    color: var(--cloud);
+    line-height: 1.6;
+    color: var(--color-mist);
+    text-shadow: 0 1px 14px rgba(11, 15, 26, 0.35);
   }
   .hero-actions {
-    margin-top: 36px;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: var(--gap);
+    gap: 12px;
+    margin-top: 36px;
   }
 
-  /* ---------- Sections ---------- */
-  section { padding-top: var(--section); }
-  .head { max-width: 720px; margin: 0 auto 48px; text-align: center; }
-  .head .mono { color: var(--ash); display: block; margin-bottom: 16px; }
-  .head h2 {
+  /* Nubes del hero (delante del titular) */
+  .hero-clouds {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+  }
+  .hero-clouds .cloud { opacity: .55; }
+
+  /* ---------- Terminal glass ---------- */
+  .terminal {
+    position: relative;
+    z-index: 2;
+    width: min(720px, 100%);
+    margin: 64px auto 0;
+    text-align: left;
+    background: rgba(11, 15, 26, 0.55);
+    -webkit-backdrop-filter: blur(22px);
+    backdrop-filter: blur(22px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-code);
+    box-shadow: var(--shadow-soft);
+    overflow: hidden;
+  }
+  .terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .terminal-bar .dot {
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.28);
+  }
+  .terminal-title {
+    margin-left: 8px;
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--color-mist);
+  }
+  .terminal-body {
     margin: 0;
-    font-family: var(--serif);
-    font-weight: 400;
-    font-size: clamp(32px, 5vw, 38px);
-    line-height: 1.05;
-    color: var(--cloud);
+    padding: 20px;
+    font-family: var(--font-code);
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--color-cloud);
+    overflow-x: auto;
   }
-  .head p { margin: 16px 0 0; font-weight: 300; font-size: 17px; color: var(--ash); }
+  .t-line { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .pr { color: var(--color-lavender); user-select: none; }
+  .t-ok { color: var(--color-lavender); }
+  .t-arrow { color: var(--color-lavender); }
+  .t-dim { color: var(--color-mist); opacity: .8; }
+  .cursor {
+    display: inline-block;
+    width: 8px; height: 1.05em;
+    margin-left: 3px;
+    vertical-align: -2px;
+    background: var(--color-lavender);
+    animation: blink 1.05s steps(1) infinite;
+  }
+  @keyframes blink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
 
-  /* ---------- Feature tiles ---------- */
-  .tiles {
+  .hero-bank {
+    margin-top: -30px;
+    margin-bottom: -60px;
+    z-index: 1;
+  }
+
+  /* ---------- Secciones ---------- */
+  main { position: relative; z-index: 1; }
+  section { padding-top: var(--section-gap); }
+  section[id] { scroll-margin-top: 96px; }
+
+  .head { max-width: 720px; margin: 0 auto 56px; text-align: center; }
+  .head .eyebrow { display: block; margin-bottom: 18px; }
+  .head h2 {
+    font-size: clamp(32px, 5vw, 48px);
+    color: var(--color-cloud);
+  }
+  .head p {
+    margin: 18px auto 0;
+    max-width: 560px;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--color-mist);
+    text-shadow: 0 1px 12px rgba(11, 15, 26, 0.3);
+  }
+
+  /* ---------- Tarjetas glass ---------- */
+  .cards {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 15px;
+    gap: 20px;
   }
-  .tile {
-    border-radius: var(--radius-tile);
-    padding: 32px;
-    min-height: 220px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 24px;
-    color: var(--pure);
-  }
-  .tile .mono { opacity: 0.85; }
-  .tile h3 {
-    margin: 0;
-    font-family: var(--serif);
-    font-weight: 400;
-    font-size: 38px;
-    line-height: 0.95;
-  }
-  .tile p { margin: 12px 0 0; font-size: 15px; line-height: 1.5; opacity: 0.92; }
-  .tile svg { width: 26px; height: 26px; }
-  .bg-iris { background: var(--iris); }
-  .bg-cyan { background: var(--cyan); }
-  .bg-pale { background: var(--pale-iris); color: var(--obsidian); }
-  .bg-deep { background: var(--deep-iris); }
-  .bg-orchid { background: var(--orchid); }
-  .bg-peri { background: var(--periwinkle); }
-
-  /* ---------- Command blocks ---------- */
-  .band { background: var(--abyss); padding: var(--section) 0; margin-top: var(--section); }
-  .band section { padding-top: 0; }
-  .cmds {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--gap);
-  }
-  .cmd {
-    margin: 0;
-    background: var(--graphite);
-    border: 1px solid rgba(255,255,255,0.08);
+  .card {
+    padding: 24px;
+    background: var(--glass-fill);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    border: 1px solid var(--glass-border);
     border-radius: var(--radius-card);
-    padding: 20px;
+    box-shadow: var(--shadow-soft);
   }
+  .card .eyebrow { color: var(--color-lavender); }
+  .card h3 {
+    margin: 16px 0 10px;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 32px;
+    line-height: 1.1;
+    color: var(--color-cloud);
+  }
+  .card p { margin: 0; font-size: 16px; line-height: 1.6; color: var(--color-mist); }
+  .card p code {
+    font-family: var(--font-code);
+    font-size: 13px;
+    color: var(--color-cloud);
+    background: rgba(11, 15, 26, 0.4);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    padding: 1px 6px;
+  }
+  .card-icon {
+    width: 40px; height: 40px;
+    color: var(--color-lavender);
+  }
+
+  /* ---------- Instalar: tabs ---------- */
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .tab {
+    padding: 10px 22px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--glass-border);
+    background: transparent;
+    color: var(--color-mist);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color .2s ease, border-color .2s ease, color .2s ease;
+  }
+  .tab:hover { background: var(--glass-fill); color: var(--color-cloud); }
+  .tab[aria-selected="true"] {
+    background: var(--glass-fill-strong);
+    border-color: var(--color-lavender);
+    color: var(--color-cloud);
+  }
+
+  /* ---------- Command block ---------- */
+  .cmd {
+    position: relative;
+    margin: 0 auto;
+    max-width: 820px;
+    background: rgba(11, 15, 26, 0.55);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-code);
+    padding: 20px;
+    box-shadow: var(--shadow-soft);
+  }
+  .cmd[hidden] { display: none; }
   .cmd-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
   }
-  .cmd-head .mono { color: var(--ash); }
+  .cmd-label {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-mist);
+  }
   .cmd pre {
     margin: 0;
-    background: var(--void);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: var(--radius);
-    padding: 16px;
-    font-family: var(--mono);
-    font-weight: 400;
-    font-size: 13px;
-    line-height: 1.6;
-    color: var(--cloud);
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-    tab-size: 2;
+    overflow-x: auto;
+    font-family: var(--font-code);
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--color-cloud);
   }
-  .cmd pre .pr { color: var(--cyan); user-select: none; }
+  .cmd pre code { white-space: pre; }
+  .cmd pre .pr { user-select: none; }
+
   .copy {
-    font-family: var(--mono);
-    font-weight: 500;
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--pure);
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.24);
-    border-radius: 9999px;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     padding: 8px 16px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--glass-border);
+    background: var(--glass-fill);
+    color: var(--color-cloud);
+    font-size: 13px;
+    font-weight: 500;
     cursor: pointer;
     transition: background-color .2s ease, border-color .2s ease;
   }
-  .copy:hover { background: rgba(255,255,255,0.2); border-color: var(--pure); }
+  .copy:hover { background: var(--glass-fill-strong); border-color: rgba(255,255,255,.35); }
+  .copy-icon {
+    width: 20px; height: 20px;
+    color: var(--color-lavender);
+    transition: transform .3s ease, opacity .3s ease;
+  }
+  .copy--done { border-color: var(--color-lavender); }
+  .copy--done .copy-icon {
+    animation: cloud-down .7s ease;
+  }
+  @keyframes cloud-down {
+    0%   { transform: translateY(0); }
+    45%  { transform: translateY(7px); }
+    100% { transform: translateY(0); }
+  }
 
-  /* ---------- Stats ---------- */
-  .stats {
+  /* ---------- Acordeón ---------- */
+  .accordion {
+    max-width: 820px;
+    margin: 24px auto 0;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 15px;
-    margin-top: var(--section);
+    gap: 10px;
   }
-  .stat {
-    background: var(--silver);
-    border-radius: var(--radius-tile);
-    padding: 32px;
-    color: var(--void);
+  .acc {
+    background: var(--glass-fill);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-card);
+    overflow: hidden;
   }
-  .stat .mono { color: rgba(0,0,0,0.55); }
-  .stat strong {
-    display: block;
-    margin: 12px 0 6px;
-    font-family: var(--serif);
-    font-weight: 400;
-    font-size: 56px;
-    line-height: 0.9;
-  }
-  .stat span { font-size: 15px; color: rgba(0,0,0,0.7); }
-
-  /* ---------- Footer ---------- */
-  footer { border-top: 1px solid rgba(255,255,255,0.08); margin-top: var(--section); }
-  .foot {
+  .acc summary {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding: 40px 24px;
-    max-width: var(--page);
-    margin: 0 auto;
-    color: var(--fog);
-    font-size: 13px;
+    padding: 18px 24px;
+    cursor: pointer;
+    list-style: none;
+    font-weight: 500;
+    color: var(--color-cloud);
   }
-  .foot .mono { letter-spacing: 0.1em; }
-  .foot a { color: var(--fog); text-decoration: none; }
-  .foot a:hover { color: var(--cloud); }
-  .foot .links { display: flex; flex-wrap: wrap; gap: 20px; }
+  .acc summary::-webkit-details-marker { display: none; }
+  .acc summary::after {
+    content: "+";
+    font-size: 22px;
+    line-height: 1;
+    color: var(--color-lavender);
+    transition: transform .2s ease;
+  }
+  .acc[open] summary::after { transform: rotate(45deg); }
+  .acc-body {
+    padding: 0 24px 22px;
+    color: var(--color-mist);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  .acc-body p { margin: 0 0 12px; }
+  .acc-body code {
+    font-family: var(--font-code);
+    font-size: 13px;
+    color: var(--color-cloud);
+    background: rgba(11, 15, 26, 0.4);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 2px 7px;
+  }
+  .acc-body pre {
+    margin: 0;
+    overflow-x: auto;
+    background: rgba(11, 15, 26, 0.45);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-button);
+    padding: 14px 16px;
+    font-family: var(--font-code);
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--color-cloud);
+  }
 
-  @media (max-width: 860px) {
-    .tiles, .stats { grid-template-columns: 1fr; }
-    .cmds { grid-template-columns: 1fr; }
-    .nav-links a:not(.btn) { display: none; }
-    h1 { max-width: 100%; }
+  .note {
+    max-width: 820px;
+    margin: 20px auto 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--color-mist);
+  }
+  .note svg { width: 18px; height: 18px; flex: none; margin-top: 2px; color: var(--color-lavender); }
+
+  /* ---------- Uso ---------- */
+  .uso {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 8px 24px;
+    background: var(--glass-fill);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-soft);
+  }
+  .uso-row {
+    display: grid;
+    grid-template-columns: minmax(0, 260px) 1fr;
+    gap: 24px;
+    align-items: baseline;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .uso-row:last-child { border-bottom: 0; }
+  .uso-row code {
+    font-family: var(--font-code);
+    font-size: 14px;
+    color: var(--color-cloud);
+  }
+  .uso-row code .pr { color: var(--color-lavender); }
+  .uso-row p { margin: 0; font-size: 16px; color: var(--color-mist); }
+
+  .shortcuts {
+    max-width: 820px;
+    margin: 20px auto 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+  .shortcut {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--glass-border);
+    background: var(--glass-fill);
+    font-size: 13px;
+    color: var(--color-mist);
+  }
+  .shortcut kbd {
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--color-cloud);
+  }
+
+  /* ---------- Releases ---------- */
+  .releases {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .release {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 24px;
+    background: var(--glass-fill);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-soft);
+  }
+  .release-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .tag {
+    font-family: var(--font-code);
+    font-size: 14px;
+    color: var(--color-lavender);
+  }
+  .release time { font-size: 13px; color: var(--color-mist); opacity: .85; }
+  .release h3 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 22px;
+    line-height: 1.2;
+    color: var(--color-cloud);
+  }
+  .release p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--color-mist);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .release-link {
+    margin-top: auto;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-cloud);
+  }
+  .release-link:hover { color: var(--color-lavender); }
+  .releases-more { text-align: center; margin-top: 32px; }
+
+  /* ---------- Footer / mar de nubes ---------- */
+  .footer {
+    position: relative;
+    z-index: 1;
+    margin-top: var(--section-gap);
+    padding-bottom: 56px;
+    background: linear-gradient(180deg,
+      rgba(255,255,255,0) 0%,
+      rgba(232,240,255,.65) 26%,
+      #eaf1ff 55%,
+      #ffffff 100%);
+  }
+  .bank--sea {
+    height: 220px;
+    margin-top: -60px;
+    filter: blur(3px);
+    background-image:
+      radial-gradient(15% 70% at 10% 104%, rgba(255,255,255,.9) 0 58%, rgba(255,255,255,0) 100%),
+      radial-gradient(13% 62% at 26% 106%, rgba(255,255,255,.85) 0 58%, rgba(255,255,255,0) 100%),
+      radial-gradient(22% 86% at 46% 108%, rgba(255,255,255,1) 0 62%, rgba(255,255,255,0) 100%),
+      radial-gradient(14% 66% at 64% 106%, rgba(255,255,255,.88) 0 58%, rgba(255,255,255,0) 100%),
+      radial-gradient(18% 78% at 82% 107%, rgba(255,255,255,.94) 0 60%, rgba(255,255,255,0) 100%),
+      radial-gradient(11% 56% at 95% 105%, rgba(255,255,255,.82) 0 58%, rgba(255,255,255,0) 100%);
+  }
+  .foot {
+    max-width: var(--page-max-width);
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    text-align: center;
+    color: var(--color-midnight);
+  }
+  .foot-phrase {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(24px, 4vw, 32px);
+    line-height: 1.2;
+    color: var(--color-midnight);
+  }
+  .foot-phrase em { font-style: italic; color: var(--color-cobalt); }
+  .foot-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; }
+  .foot-links a {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-cobalt);
+    transition: color .2s ease;
+  }
+  .foot-links a:hover { color: var(--color-midnight); }
+  .foot-meta {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(11, 15, 26, 0.55);
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 900px) {
+    .cards { grid-template-columns: 1fr; }
+    .releases { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    :root { --section-gap: 88px; }
+    .hero { padding-top: 140px; }
+    .nav-links > a:not(.btn) { display: none; }
+    .uso-row { grid-template-columns: 1fr; gap: 6px; }
+    .brand { font-size: 20px; }
+    .hero-clouds { display: none; }
+  }
+
+  /* ---------- Movimiento reducido ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .cloud-drift { animation: none; }
+    .cursor { animation: none; }
+    .btn, .btn-primary:hover, .copy, .tab, .acc summary::after { transition: none; }
+    .btn-primary:hover { transform: none; }
+    .copy--done .copy-icon { animation: none; }
   }
 </style>
 </head>
 <body>
 
-<nav class="nav">
+<a class="skip" href="#main">Saltar al contenido</a>
+
+<div class="sky" aria-hidden="true"></div>
+
+<svg class="defs" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="cloudFill" cx="42%" cy="34%" r="72%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="58%" stop-color="#f4f7ff" />
+      <stop offset="100%" stop-color="#dbe7ff" />
+    </radialGradient>
+    <filter id="cloudShadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="10" stdDeviation="13" flood-color="#5a6fbb" flood-opacity="0.45" />
+    </filter>
+    <symbol id="cloud-a" viewBox="0 0 260 150">
+      <g filter="url(#cloudShadow)">
+        <ellipse cx="86" cy="102" rx="82" ry="42" fill="url(#cloudFill)" />
+        <ellipse cx="150" cy="82" rx="72" ry="52" fill="url(#cloudFill)" />
+        <ellipse cx="200" cy="106" rx="56" ry="36" fill="url(#cloudFill)" />
+        <ellipse cx="64" cy="74" rx="50" ry="40" fill="url(#cloudFill)" />
+      </g>
+    </symbol>
+    <symbol id="cloud-b" viewBox="0 0 200 160">
+      <g filter="url(#cloudShadow)">
+        <ellipse cx="80" cy="96" rx="66" ry="44" fill="url(#cloudFill)" />
+        <ellipse cx="118" cy="70" rx="58" ry="50" fill="url(#cloudFill)" />
+        <ellipse cx="140" cy="110" rx="48" ry="34" fill="url(#cloudFill)" />
+      </g>
+    </symbol>
+    <symbol id="cloud-c" viewBox="0 0 170 110">
+      <g filter="url(#cloudShadow)">
+        <ellipse cx="66" cy="72" rx="60" ry="34" fill="url(#cloudFill)" />
+        <ellipse cx="108" cy="60" rx="46" ry="36" fill="url(#cloudFill)" />
+        <ellipse cx="134" cy="78" rx="34" ry="24" fill="url(#cloudFill)" />
+      </g>
+    </symbol>
+    <symbol id="cloud-d" viewBox="0 0 320 130">
+      <g filter="url(#cloudShadow)">
+        <ellipse cx="90" cy="92" rx="88" ry="36" fill="url(#cloudFill)" />
+        <ellipse cx="168" cy="76" rx="76" ry="46" fill="url(#cloudFill)" />
+        <ellipse cx="240" cy="94" rx="72" ry="34" fill="url(#cloudFill)" />
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="cloudfield" aria-hidden="true">
+  <div class="cloud cloud--far"  data-depth="0.15" style="top:5%;  left:-8%;  width:360px"><div class="cloud-drift" style="animation-duration:118s"><svg viewBox="0 0 260 150"><use href="#cloud-a" /></svg></div></div>
+  <div class="cloud cloud--far"  data-depth="0.18" style="top:12%; left:70%;  width:430px"><div class="cloud-drift" style="animation-duration:104s; animation-delay:-20s"><svg viewBox="0 0 320 130"><use href="#cloud-d" /></svg></div></div>
+  <div class="cloud cloud--mid"  data-depth="0.42" style="top:24%; left:36%;  width:250px"><div class="cloud-drift" style="animation-duration:86s; animation-delay:-40s"><svg viewBox="0 0 200 160"><use href="#cloud-b" /></svg></div></div>
+  <div class="cloud cloud--near" data-depth="0.64" style="top:9%;  left:16%;  width:210px"><div class="cloud-drift" style="animation-duration:74s; animation-delay:-12s"><svg viewBox="0 0 170 110"><use href="#cloud-c" /></svg></div></div>
+  <div class="cloud cloud--far"  data-depth="0.22" style="top:38%; left:-6%;  width:480px"><div class="cloud-drift" style="animation-duration:120s; animation-delay:-55s"><svg viewBox="0 0 320 130"><use href="#cloud-d" /></svg></div></div>
+  <div class="cloud cloud--mid"  data-depth="0.48" style="top:46%; left:62%;  width:300px"><div class="cloud-drift" style="animation-duration:92s; animation-delay:-30s"><svg viewBox="0 0 260 150"><use href="#cloud-a" /></svg></div></div>
+  <div class="cloud cloud--near" data-depth="0.7"  style="top:33%; left:82%;  width:190px"><div class="cloud-drift" style="animation-duration:70s; animation-delay:-48s"><svg viewBox="0 0 170 110"><use href="#cloud-c" /></svg></div></div>
+  <div class="cloud cloud--mid"  data-depth="0.36" style="top:58%; left:8%;   width:340px"><div class="cloud-drift" style="animation-duration:98s; animation-delay:-8s"><svg viewBox="0 0 320 130"><use href="#cloud-d" /></svg></div></div>
+  <div class="cloud cloud--near" data-depth="0.58" style="top:66%; left:44%;  width:250px"><div class="cloud-drift" style="animation-duration:78s; animation-delay:-62s"><svg viewBox="0 0 200 160"><use href="#cloud-b" /></svg></div></div>
+  <div class="cloud cloud--far"  data-depth="0.2"  style="top:54%; left:76%;  width:420px"><div class="cloud-drift" style="animation-duration:116s; animation-delay:-35s"><svg viewBox="0 0 320 130"><use href="#cloud-d" /></svg></div></div>
+  <div class="cloud cloud--mid"  data-depth="0.4"  style="top:74%; left:22%;  width:290px"><div class="cloud-drift" style="animation-duration:88s; animation-delay:-18s"><svg viewBox="0 0 260 150"><use href="#cloud-a" /></svg></div></div>
+  <div class="cloud cloud--mid"  data-depth="0.34" style="top:82%; left:64%;  width:360px"><div class="cloud-drift" style="animation-duration:100s; animation-delay:-50s"><svg viewBox="0 0 320 130"><use href="#cloud-d" /></svg></div></div>
+  <div class="cloud cloud--near" data-depth="0.5"  style="top:70%; left:-6%;  width:340px"><div class="cloud-drift" style="animation-duration:80s; animation-delay:-26s"><svg viewBox="0 0 260 150"><use href="#cloud-a" /></svg></div></div>
+  <div class="cloud cloud--mid"  data-depth="0.44" style="top:88%; left:6%;   width:270px"><div class="cloud-drift" style="animation-duration:84s; animation-delay:-44s"><svg viewBox="0 0 200 160"><use href="#cloud-b" /></svg></div></div>
+</div>
+
+<nav class="nav" aria-label="Principal">
   <div class="wrap nav-inner">
     <a class="brand" href="#top">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#d1c9ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M17.5 19a4.5 4.5 0 0 0 .4-8.98A6 6 0 0 0 6.2 11.3 4 4 0 0 0 7 19z"/>
+      <svg viewBox="0 0 24 24" fill="none" stroke="#b9b8ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M17.5 19a4.5 4.5 0 0 0 .4-8.98A6 6 0 0 0 6.2 11.3 4 4 0 0 0 7 19z" />
       </svg>
       Skynative
     </a>
     <div class="nav-links">
       <a href="#instalar">Instalar</a>
       <a href="#desinstalar">Desinstalar</a>
-      <a href="https://github.com/eleodevv/skynative/releases">Releases</a>
-      <a class="btn btn-primary btn-sm" href="#instalar">Descargar</a>
+      <a href="#releases">Releases</a>
+      <a class="btn btn-ghost btn-sm btn-nav" href="#instalar">Descargar</a>
     </div>
   </div>
 </nav>
 
 <header class="hero" id="top">
-  <div class="wrap">
-    <span class="pill">Skynative · Tauri v2</span>
-    <h1>Tu web, con un <em>cielo</em> propio.</h1>
-    <p>Convierte una URL en una aplicación de escritorio nativa: ligera, multiplataforma y sin fricción. Skynative la crea, la compila y la deja lista en tu sistema.</p>
+  <div class="hero-clouds" aria-hidden="true">
+    <div class="cloud cloud--near" data-depth="0.9" style="top:64%; left:-10%; width:300px"><div class="cloud-drift" style="animation-duration:76s"><svg viewBox="0 0 260 150"><use href="#cloud-a" /></svg></div></div>
+    <div class="cloud cloud--near" data-depth="1"   style="top:18%; left:78%;  width:260px"><div class="cloud-drift" style="animation-duration:68s; animation-delay:-24s"><svg viewBox="0 0 200 160"><use href="#cloud-b" /></svg></div></div>
+  </div>
+
+  <div class="wrap hero-inner">
+    <span class="badge">Skynative · Tauri v2</span>
+    <h1 class="display">Tu web, con un <em>cielo</em> propio.</h1>
+    <p class="hero-sub">Convierte una URL en una aplicación de escritorio nativa: ligera, multiplataforma y sin fricción. Skynative la genera, la compila y la deja lista en tu sistema.</p>
     <div class="hero-actions">
-      <a class="btn btn-primary" href="#instalar">Descargar →</a>
+      <a class="btn btn-primary" href="#instalar">Descargar <span aria-hidden="true">→</span></a>
       <a class="btn btn-ghost" href="https://github.com/eleodevv/skynative">Ver en GitHub</a>
     </div>
+
+    <div class="terminal" role="img" aria-label="Terminal de Skynative creando una aplicación de escritorio">
+      <div class="terminal-bar" aria-hidden="true">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="terminal-title">skynative — zsh</span>
+      </div>
+      <pre class="terminal-body"><code id="terminal-code"></code></pre>
+    </div>
   </div>
+
+  <div class="bank hero-bank" aria-hidden="true"></div>
 </header>
 
-<main>
-  <section>
+<main id="main">
+
+  <section aria-labelledby="como-title">
     <div class="wrap">
       <div class="head">
-        <span class="mono">Del enlace a la ventana</span>
-        <h2>Cuatro pasos, cero andamiaje</h2>
-        <p>Skynative orquesta el entorno de Tauri por ti, de principio a fin.</p>
+        <span class="eyebrow">Del enlace a la ventana</span>
+        <h2 class="display" id="como-title">Tres pasos para tenerla <em>volando</em></h2>
+        <p>Sin andamiaje manual. Skynative orquesta todo el entorno de Tauri por ti.</p>
       </div>
 
-      <div class="tiles">
-        <article class="tile bg-iris">
-          <span class="mono">01 · Crear</span>
-          <div>
-            <h3>Crea</h3>
-            <p>Genera un proyecto Tauri v2 completo (config, iconos y código) a partir de una URL http o https.</p>
-          </div>
+      <div class="cards">
+        <article class="card">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L11 4" />
+            <path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07L13 19" />
+          </svg>
+          <span class="eyebrow">01 · URL</span>
+          <h3>Pega tu URL</h3>
+          <p>Acepta <code>http</code> y <code>https</code>, valida el nombre y rechaza esquemas peligrosos antes de generar nada.</p>
         </article>
 
-        <article class="tile bg-cyan">
-          <span class="mono">02 · Preparar</span>
-          <div>
-            <h3>Prepara</h3>
-            <p>Detecta lo que falta e instala Rust, la CLI de Tauri y las dependencias del sistema pidiendo sudo si hace falta.</p>
-          </div>
+        <article class="card">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3v9" /><path d="m8 8 4 4 4-4" /><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+          </svg>
+          <span class="eyebrow">02 · Compilación</span>
+          <h3>Se compila sola</h3>
+          <p>Genera el proyecto Tauri v2, instala lo que falte y compila con Rust y el WebView de tu sistema.</p>
         </article>
 
-        <article class="tile bg-pale">
-          <span class="mono">03 · Compilar</span>
-          <div>
-            <h3>Compila</h3>
-            <p>Compila automáticamente. Si el empaquetado nativo falla, reintenta con <span class="mono">--no-bundle</span> para darte el binario igualmente.</p>
-          </div>
-        </article>
-
-        <article class="tile bg-deep">
-          <span class="mono">04 · Instalar</span>
-          <div>
-            <h3>Instala</h3>
-            <p>Registra la app con su icono para abrirla con doble clic y encontrarla al buscar. Sin administrador y sin tocar el sistema de más.</p>
-          </div>
-        </article>
-
-        <article class="tile bg-orchid">
-          <span class="mono">Multiplataforma</span>
-          <div>
-            <h3>En todas partes</h3>
-            <p>Linux, macOS y Windows, con el WebView del propio sistema. Binarios pequeños y ligeros.</p>
-          </div>
-        </article>
-
-        <article class="tile bg-peri">
-          <span class="mono">Seguro por diseño</span>
-          <div>
-            <h3>Sin permisos de más</h3>
-            <p>El contenido remoto no recibe IPC ni acceso al sistema de archivos. Solo se abre la ventana que pediste.</p>
-          </div>
+        <article class="card">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="4" /><path d="M8 12.5l2.5 2.5L16 9.5" />
+          </svg>
+          <span class="eyebrow">03 · Instalada</span>
+          <h3>Aparece en tu sistema</h3>
+          <p>Registra la app con su icono para abrirla con doble clic y encontrarla al buscar. Sin administrador.</p>
         </article>
       </div>
     </div>
   </section>
 
-  <div class="band" id="instalar">
-    <section>
-      <div class="wrap">
-        <div class="head">
-          <span class="mono">Instalar</span>
-          <h2>Instala con un comando</h2>
-          <p>Instaladores sin privilegios de administrador que verifican el checksum SHA-256 antes de ejecutar nada.</p>
-        </div>
+  <div class="bank" aria-hidden="true"></div>
 
-        <div class="cmds">
-          <figure class="cmd">
-            <figcaption class="cmd-head">
-              <span class="mono">Linux · macOS</span>
-              <button class="copy" type="button" data-copy="#cmd-unix" data-text="curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/install.sh | sh">Copiar</button>
-            </figcaption>
-            <pre><code id="cmd-unix"><span class="pr">$ </span>curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/install.sh | sh</code></pre>
-          </figure>
-
-          <figure class="cmd">
-            <figcaption class="cmd-head">
-              <span class="mono">Windows · PowerShell</span>
-              <button class="copy" type="button" data-copy="#cmd-win" data-text="irm https://github.com/eleodevv/skynative/releases/latest/download/install.ps1 | iex">Copiar</button>
-            </figcaption>
-            <pre><code id="cmd-win"><span class="pr">PS&gt; </span>irm https://github.com/eleodevv/skynative/releases/latest/download/install.ps1 | iex</code></pre>
-          </figure>
-
-          <figure class="cmd">
-            <figcaption class="cmd-head">
-              <span class="mono">Desde el código · Go 1.24+</span>
-              <button class="copy" type="button" data-copy="#cmd-src" data-text="git clone https://github.com/eleodevv/skynative.git&#10;cd skynative &amp;&amp; make compilar-local">Copiar</button>
-            </figcaption>
-            <pre><code id="cmd-src"><span class="pr">$ </span>git clone https://github.com/eleodevv/skynative.git
-<span class="pr">$ </span>cd skynative &amp;&amp; make compilar-local</code></pre>
-          </figure>
-
-          <figure class="cmd">
-            <figcaption class="cmd-head">
-              <span class="mono">Multiplataforma · make</span>
-              <button class="copy" type="button" data-copy="#cmd-multi" data-text="make compilar-todas-plataformas">Copiar</button>
-            </figcaption>
-            <pre><code id="cmd-multi"><span class="pr">$ </span>make compilar-todas-plataformas</code></pre>
-          </figure>
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <section>
+  <section id="instalar" aria-labelledby="instalar-title">
     <div class="wrap">
-      <div class="stats">
-        <div class="stat">
-          <span class="mono">Plataformas</span>
-          <strong>3</strong>
-          <span>Linux, macOS y Windows</span>
+      <div class="head">
+        <span class="eyebrow">Instalar</span>
+        <h2 class="display" id="instalar-title">Instala con un <em>comando</em></h2>
+        <p>Elige tu sistema. El instalador verifica el checksum SHA-256 antes de ejecutar nada y no pide administrador.</p>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="Instalación por sistema operativo">
+        <button class="tab" type="button" role="tab" id="tab-linux" aria-controls="panel-linux" aria-selected="true">Linux</button>
+        <button class="tab" type="button" role="tab" id="tab-macos" aria-controls="panel-macos" aria-selected="false" tabindex="-1">macOS</button>
+        <button class="tab" type="button" role="tab" id="tab-windows" aria-controls="panel-windows" aria-selected="false" tabindex="-1">Windows</button>
+      </div>
+
+      <div class="cmd" role="tabpanel" id="panel-linux" aria-labelledby="tab-linux">
+        <div class="cmd-head">
+          <span class="cmd-label">Linux · terminal</span>
+          <button class="copy" type="button" data-copy="curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/install.sh | sh" aria-label="Copiar comando de instalación para Linux">
+            <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M17.5 15a4 4 0 0 0 .3-7.98A5.5 5.5 0 0 0 7 7.3 3.5 3.5 0 0 0 7 15" />
+              <path d="M12 11v7" /><path d="m9 15 3 3 3-3" />
+            </svg>
+            <span class="copy-label">Copiar</span>
+          </button>
         </div>
-        <div class="stat">
-          <span class="mono">Para empezar</span>
-          <strong>1</strong>
-          <span>comando de instalación</span>
+        <pre><code><span class="pr">$ </span>curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/install.sh | sh</code></pre>
+      </div>
+
+      <div class="cmd" role="tabpanel" id="panel-macos" aria-labelledby="tab-macos" hidden>
+        <div class="cmd-head">
+          <span class="cmd-label">macOS · terminal</span>
+          <button class="copy" type="button" data-copy="curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/install.sh | sh" aria-label="Copiar comando de instalación para macOS">
+            <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M17.5 15a4 4 0 0 0 .3-7.98A5.5 5.5 0 0 0 7 7.3 3.5 3.5 0 0 0 7 15" />
+              <path d="M12 11v7" /><path d="m9 15 3 3 3-3" />
+            </svg>
+            <span class="copy-label">Copiar</span>
+          </button>
         </div>
-        <div class="stat">
-          <span class="mono">Licencia</span>
-          <strong>MIT</strong>
-          <span>software libre y auditable</span>
+        <pre><code><span class="pr">$ </span>curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/install.sh | sh</code></pre>
+      </div>
+
+      <div class="cmd" role="tabpanel" id="panel-windows" aria-labelledby="tab-windows" hidden>
+        <div class="cmd-head">
+          <span class="cmd-label">Windows · PowerShell</span>
+          <button class="copy" type="button" data-copy="irm https://github.com/eleodevv/skynative/releases/latest/download/install.ps1 | iex" aria-label="Copiar comando de instalación para Windows">
+            <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M17.5 15a4 4 0 0 0 .3-7.98A5.5 5.5 0 0 0 7 7.3 3.5 3.5 0 0 0 7 15" />
+              <path d="M12 11v7" /><path d="m9 15 3 3 3-3" />
+            </svg>
+            <span class="copy-label">Copiar</span>
+          </button>
         </div>
+        <pre><code><span class="pr">PS&gt; </span>irm https://github.com/eleodevv/skynative/releases/latest/download/install.ps1 | iex</code></pre>
+      </div>
+
+      <p class="note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" /><path d="M12 8v5" /><path d="M12 16h.01" />
+        </svg>
+        Para actualizar, vuelve a ejecutar el instalador: sin variables instala siempre la última release.
+      </p>
+
+      <div class="accordion">
+        <details class="acc">
+          <summary>Requisitos en Linux</summary>
+          <div class="acc-body">
+            <p>Además de Rust y la CLI de Tauri v2, necesitas las dependencias de escritorio. En Debian o Ubuntu:</p>
+            <pre>sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev \
+  build-essential curl wget file libxdo-dev libssl-dev \
+  libayatana-appindicator3-dev librsvg2-dev</pre>
+          </div>
+        </details>
+        <details class="acc">
+          <summary>Requisitos en macOS</summary>
+          <div class="acc-body">
+            <p>Solo las herramientas de línea de comandos de Xcode:</p>
+            <pre>xcode-select --install</pre>
+          </div>
+        </details>
+        <details class="acc">
+          <summary>Requisitos en Windows</summary>
+          <div class="acc-body">
+            <p>Microsoft Edge WebView2 Runtime (incluido en Windows 10/11) y las herramientas de compilación de Visual Studio (C++ Build Tools).</p>
+            <p>Tampoco hace falta instalarlos a mano: la opción <code>Instalar herramientas necesarias</code> del menú se encarga por ti.</p>
+          </div>
+        </details>
       </div>
     </div>
   </section>
 
-  <div class="band" id="desinstalar">
-    <section>
-      <div class="wrap">
-        <div class="head">
-          <span class="mono">Desinstalar</span>
-          <h2>Quítalo cuando quieras</h2>
-          <p>Elimina Skynative del sistema. Tus proyectos y aplicaciones creadas se quedan intactos.</p>
+  <section id="uso" aria-labelledby="uso-title">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Uso</span>
+        <h2 class="display" id="uso-title">Una terminal, todo el <em>vuelo</em></h2>
+        <p>Skynative vive en tu terminal. Ábrela sin argumentos y deja que el menú te guíe.</p>
+      </div>
+
+      <div class="uso">
+        <div class="uso-row">
+          <code><span class="pr">$ </span>skynative</code>
+          <p>Abre el menú interactivo: crear, compilar, instalar, listar y diagnosticar.</p>
         </div>
-
-        <div class="cmds">
-          <figure class="cmd">
-            <figcaption class="cmd-head">
-              <span class="mono">Linux · macOS</span>
-              <button class="copy" type="button" data-copy="#cmd-del-unix" data-text="curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/desinstalar.sh | sh">Copiar</button>
-            </figcaption>
-            <pre><code id="cmd-del-unix"><span class="pr">$ </span>curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/desinstalar.sh | sh</code></pre>
-          </figure>
-
-          <figure class="cmd">
-            <figcaption class="cmd-head">
-              <span class="mono">Windows · PowerShell</span>
-              <button class="copy" type="button" data-copy="#cmd-del-win" data-text="irm https://github.com/eleodevv/skynative/releases/latest/download/desinstalar.ps1 | iex">Copiar</button>
-            </figcaption>
-            <pre><code id="cmd-del-win"><span class="pr">PS&gt; </span>irm https://github.com/eleodevv/skynative/releases/latest/download/desinstalar.ps1 | iex</code></pre>
-          </figure>
+        <div class="uso-row">
+          <code><span class="pr">$ </span>skynative --help</code>
+          <p>Muestra la ayuda de la herramienta.</p>
+        </div>
+        <div class="uso-row">
+          <code><span class="pr">$ </span>skynative --version</code>
+          <p>Imprime la versión instalada.</p>
         </div>
       </div>
-    </section>
-  </div>
+
+      <div class="shortcuts" aria-label="Atajos de teclado del menú">
+        <span class="shortcut"><kbd>↑ ↓</kbd> elegir</span>
+        <span class="shortcut"><kbd>Enter</kbd> abrir</span>
+        <span class="shortcut"><kbd>Ctrl+G</kbd> crear</span>
+        <span class="shortcut"><kbd>C</kbd> compilar</span>
+        <span class="shortcut"><kbd>I</kbd> instalar</span>
+        <span class="shortcut"><kbd>q</kbd> salir</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="desinstalar" aria-labelledby="desinstalar-title">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Desinstalar</span>
+        <h2 class="display" id="desinstalar-title">Quítalo cuando <em>quieras</em></h2>
+        <p>Elimina Skynative del sistema. Tus proyectos y las aplicaciones creadas se quedan intactos.</p>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="Desinstalación por sistema operativo">
+        <button class="tab" type="button" role="tab" id="dtab-unix" aria-controls="dpanel-unix" aria-selected="true">Linux · macOS</button>
+        <button class="tab" type="button" role="tab" id="dtab-win" aria-controls="dpanel-win" aria-selected="false" tabindex="-1">Windows</button>
+      </div>
+
+      <div class="cmd" role="tabpanel" id="dpanel-unix" aria-labelledby="dtab-unix">
+        <div class="cmd-head">
+          <span class="cmd-label">Linux · macOS · terminal</span>
+          <button class="copy" type="button" data-copy="curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/desinstalar.sh | sh" aria-label="Copiar comando de desinstalación para Linux y macOS">
+            <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M17.5 15a4 4 0 0 0 .3-7.98A5.5 5.5 0 0 0 7 7.3 3.5 3.5 0 0 0 7 15" />
+              <path d="M12 11v7" /><path d="m9 15 3 3 3-3" />
+            </svg>
+            <span class="copy-label">Copiar</span>
+          </button>
+        </div>
+        <pre><code><span class="pr">$ </span>curl -fsSL https://github.com/eleodevv/skynative/releases/latest/download/desinstalar.sh | sh</code></pre>
+      </div>
+
+      <div class="cmd" role="tabpanel" id="dpanel-win" aria-labelledby="dtab-win" hidden>
+        <div class="cmd-head">
+          <span class="cmd-label">Windows · PowerShell</span>
+          <button class="copy" type="button" data-copy="irm https://github.com/eleodevv/skynative/releases/latest/download/desinstalar.ps1 | iex" aria-label="Copiar comando de desinstalación para Windows">
+            <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M17.5 15a4 4 0 0 0 .3-7.98A5.5 5.5 0 0 0 7 7.3 3.5 3.5 0 0 0 7 15" />
+              <path d="M12 11v7" /><path d="m9 15 3 3 3-3" />
+            </svg>
+            <span class="copy-label">Copiar</span>
+          </button>
+        </div>
+        <pre><code><span class="pr">PS&gt; </span>irm https://github.com/eleodevv/skynative/releases/latest/download/desinstalar.ps1 | iex</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="releases" aria-labelledby="releases-title">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Releases</span>
+        <h2 class="display" id="releases-title">Últimas <em>versiones</em></h2>
+        <p>Binarios para Linux, macOS y Windows, con sus checksums. Siempre desde el repositorio oficial.</p>
+      </div>
+
+      <ul class="releases" id="releases-list">
+        <li class="release">
+          <div class="release-head"><span class="tag">v0.4.1</span></div>
+          <h3>Última release</h3>
+          <p>Skynative para Linux, macOS y Windows, con instaladores y verificación de checksum.</p>
+          <a class="release-link" href="https://github.com/eleodevv/skynative/releases/tag/v0.4.1">Ver release →</a>
+        </li>
+        <li class="release">
+          <div class="release-head"><span class="tag">v0.4.0</span></div>
+          <h3>Skynative v0.4.0</h3>
+          <p>Mejoras del instalador y del registro de aplicaciones en el sistema.</p>
+          <a class="release-link" href="https://github.com/eleodevv/skynative/releases/tag/v0.4.0">Ver release →</a>
+        </li>
+        <li class="release">
+          <div class="release-head"><span class="tag">v0.3.0</span></div>
+          <h3>Skynative v0.3.0</h3>
+          <p>Generación, compilación e instalación encadenadas desde la terminal.</p>
+          <a class="release-link" href="https://github.com/eleodevv/skynative/releases/tag/v0.3.0">Ver release →</a>
+        </li>
+      </ul>
+
+      <div class="releases-more">
+        <a class="btn btn-ghost" href="https://github.com/eleodevv/skynative/releases">Todas las releases</a>
+      </div>
+    </div>
+  </section>
 </main>
 
-<footer>
+<footer class="footer">
+  <div class="bank bank--sea" aria-hidden="true"></div>
   <div class="foot">
-    <span class="mono">Skynative · MIT · Go + Tauri v2</span>
-    <span class="links">
-      <a href="https://github.com/eleodevv/skynative">Repositorio</a>
+    <p class="foot-phrase">Hecho para que tus webs <em>vuelen</em>.</p>
+    <div class="foot-links">
+      <a href="https://github.com/eleodevv/skynative">GitHub</a>
       <a href="https://github.com/eleodevv/skynative/releases">Releases</a>
-      <a href="https://v2.tauri.app/">Tauri v2</a>
-    </span>
+      <a href="https://github.com/eleodevv/skynative/blob/main/LICENSE">Licencia MIT</a>
+    </div>
+    <span class="foot-meta">Skynative · Go + Tauri v2 · MIT</span>
   </div>
 </footer>
 
 <script>
-  document.querySelectorAll('.copy').forEach(function (btn) {
+(function () {
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- Cielo + parallax de nubes ---------- */
+  var root = document.documentElement;
+  var clouds = Array.prototype.slice.call(document.querySelectorAll('.cloud[data-depth]'));
+  var ticking = false;
+
+  function onScroll() {
+    if (ticking) return;
+    ticking = true;
+    window.requestAnimationFrame(function () {
+      var max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      var p = Math.min(1, Math.max(0, (window.pageYOffset || window.scrollY) / max));
+      root.style.setProperty('--sky', (p * 120).toFixed(2));
+      if (!reduce) {
+        for (var i = 0; i < clouds.length; i++) {
+          var c = clouds[i];
+          var d = parseFloat(c.getAttribute('data-depth')) || 0.3;
+          c.style.transform = 'translate3d(0,' + ((0.5 - p) * d * 220).toFixed(1) + 'px,0)';
+        }
+      }
+      ticking = false;
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+  onScroll();
+
+  /* ---------- Terminal con typewriter ---------- */
+  var code = document.getElementById('terminal-code');
+  if (code) {
+    var cmd = 'skynative';
+    var lines = [
+      '<span class="t-ok">✔</span> Entorno listo · Rust, Cargo y CLI de Tauri v2',
+      '<span class="t-arrow">▸</span> Crear aplicación',
+      '<span class="t-dim">URL</span> https://mi-web.com',
+      '<span class="t-ok">✔</span> Proyecto generado en <span class="t-dim">~/apps/mi-web</span>',
+      '<span class="t-ok">✔</span> Compilado · ventana nativa lista'
+    ];
+    var cursor = document.createElement('span');
+    cursor.className = 'cursor';
+    cursor.setAttribute('aria-hidden', 'true');
+
+    function addLine(html) {
+      var div = document.createElement('div');
+      div.className = 't-line';
+      div.innerHTML = html;
+      code.appendChild(div);
+      return div;
+    }
+
+    if (reduce) {
+      addLine('<span class="pr">$</span> ' + cmd);
+      lines.forEach(addLine);
+      cursor.style.animation = 'none';
+      code.lastChild.appendChild(cursor);
+    } else {
+      var first = document.createElement('div');
+      first.className = 't-line';
+      var prompt = document.createElement('span');
+      prompt.className = 'pr';
+      prompt.textContent = '$';
+      first.appendChild(prompt);
+      first.appendChild(document.createTextNode(' '));
+      var typed = document.createTextNode('');
+      first.appendChild(typed);
+      first.appendChild(cursor);
+      code.appendChild(first);
+
+      var i = 0;
+      (function type() {
+        if (i <= cmd.length) {
+          typed.nodeValue = cmd.slice(0, i);
+          i++;
+          window.setTimeout(type, 85 + Math.random() * 70);
+        } else {
+          reveal(0);
+        }
+      })();
+
+      function reveal(n) {
+        if (n >= lines.length) return;
+        var div = addLine(lines[n]);
+        div.appendChild(cursor);
+        window.setTimeout(function () { reveal(n + 1); }, 240);
+      }
+    }
+  }
+
+  /* ---------- Pestañas por sistema ---------- */
+  Array.prototype.slice.call(document.querySelectorAll('[role="tablist"]')).forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    if (!tabs.length) return;
+
+    function select(index, focus) {
+      tabs.forEach(function (tab, i) {
+        var panel = document.getElementById(tab.getAttribute('aria-controls'));
+        var active = i === index;
+        tab.setAttribute('aria-selected', active ? 'true' : 'false');
+        tab.tabIndex = active ? 0 : -1;
+        if (panel) panel.hidden = !active;
+        if (active && focus) tab.focus();
+      });
+    }
+
+    tabs.forEach(function (tab, index) {
+      tab.addEventListener('click', function () { select(index); });
+      tab.addEventListener('keydown', function (e) {
+        var next = null;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (index + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (index - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') next = 0;
+        else if (e.key === 'End') next = tabs.length - 1;
+        if (next !== null) { e.preventDefault(); select(next, true); }
+      });
+    });
+  });
+
+  /* ---------- Botones de copiar ---------- */
+  Array.prototype.slice.call(document.querySelectorAll('.copy')).forEach(function (btn) {
     btn.addEventListener('click', function () {
-      var target = document.querySelector(btn.getAttribute('data-copy'));
-      if (!target) return;
-      var texto = btn.getAttribute('data-text') || target.textContent.trim();
-      var done = function () {
-        var original = btn.textContent;
-        btn.textContent = 'Copiado';
-        setTimeout(function () { btn.textContent = original; }, 1500);
-      };
+      var texto = btn.getAttribute('data-copy') || '';
+      var label = btn.querySelector('.copy-label');
+      var original = label ? label.textContent : '';
+
+      function done() {
+        btn.classList.add('copy--done');
+        if (label) label.textContent = '¡Copiado!';
+        window.setTimeout(function () {
+          btn.classList.remove('copy--done');
+          if (label) label.textContent = original;
+        }, 1600);
+      }
+
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(texto).then(done, done);
+        navigator.clipboard.writeText(texto).then(done, fallback);
       } else {
-        var rango = document.createRange();
-        rango.selectNodeContents(target);
-        var sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(rango);
+        fallback();
+      }
+
+      function fallback() {
+        var area = document.createElement('textarea');
+        area.value = texto;
+        area.setAttribute('readonly', '');
+        area.style.position = 'absolute';
+        area.style.left = '-9999px';
+        document.body.appendChild(area);
+        area.select();
         try { document.execCommand('copy'); } catch (e) {}
-        sel.removeAllRanges();
+        document.body.removeChild(area);
         done();
       }
     });
   });
+
+  /* ---------- Releases desde la API de GitHub ---------- */
+  function limpiarCuerpo(body) {
+    if (!body) return '';
+    var lineas = body.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+    for (var i = 0; i < lineas.length; i++) {
+      if (/full changelog/i.test(lineas[i])) continue;
+      var limpia = lineas[i]
+        .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+        .replace(/[*_`>#]+/g, '')
+        .trim();
+      if (limpia && !/^https?:\/\//.test(limpia)) return limpia;
+    }
+    return '';
+  }
+
+  var lista = document.getElementById('releases-list');
+  if (lista && window.fetch) {
+    fetch('https://api.github.com/repos/eleodevv/skynative/releases?per_page=3')
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (data) {
+        if (!Array.isArray(data) || !data.length) return;
+        lista.innerHTML = '';
+        data.forEach(function (rel) {
+          var tagText = rel.tag_name || 'release';
+          var fecha = '';
+          if (rel.published_at) {
+            try {
+              fecha = new Date(rel.published_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+            } catch (e) { fecha = ''; }
+          }
+          var li = document.createElement('li');
+          li.className = 'release';
+
+          var head = document.createElement('div');
+          head.className = 'release-head';
+          var tag = document.createElement('span');
+          tag.className = 'tag';
+          tag.textContent = tagText;
+          head.appendChild(tag);
+          if (fecha) {
+            var t = document.createElement('time');
+            t.dateTime = rel.published_at;
+            t.textContent = fecha;
+            head.appendChild(t);
+          }
+
+          var h3 = document.createElement('h3');
+          h3.textContent = (rel.name && rel.name !== rel.tag_name) ? rel.name : 'Skynative ' + tagText;
+
+          var p = document.createElement('p');
+          p.textContent = limpiarCuerpo(rel.body) || 'Binarios e instaladores de esta versión.';
+
+          var a = document.createElement('a');
+          a.className = 'release-link';
+          a.href = rel.html_url || 'https://github.com/eleodevv/skynative/releases';
+          a.textContent = 'Ver release →';
+
+          li.appendChild(head);
+          li.appendChild(h3);
+          li.appendChild(p);
+          li.appendChild(a);
+          lista.appendChild(li);
+        });
+      })
+      .catch(function () { /* se conserva la lista estática de respaldo */ });
+  }
+})();
 </script>
 </body>
 </html>
