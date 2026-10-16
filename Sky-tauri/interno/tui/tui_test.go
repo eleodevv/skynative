@@ -11,9 +11,9 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/skynative/skynative/interno/configuracion"
-	"github.com/skynative/skynative/interno/generador"
-	"github.com/skynative/skynative/interno/proyectos"
+	"github.com/skynative/sky-tauri/interno/configuracion"
+	"github.com/skynative/sky-tauri/interno/generador"
+	"github.com/skynative/sky-tauri/interno/proyectos"
 )
 
 // TestProgramaArrancaYSale demuestra que el bucle de Bubble Tea se inicia y

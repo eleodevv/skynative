@@ -16,8 +16,8 @@ import (
 	"runtime"
 	"text/template"
 
-	"github.com/skynative/skynative/interno/configuracion"
-	"github.com/skynative/skynative/plantillas"
+	"github.com/skynative/sky-tauri/interno/configuracion"
+	"github.com/skynative/sky-tauri/plantillas"
 )
 
 // Resultado describe el proyecto generado.

@@ -3,7 +3,7 @@
 // Los tres valores siguientes se pueden sustituir en tiempo de enlace con
 // variables de enlace de Go, por ejemplo:
 //
-//	go build -ldflags "-X github.com/skynative/skynative/interno/version.Version=0.1.0"
+//	go build -ldflags "-X github.com/skynative/sky-tauri/interno/version.Version=0.1.0"
 package version
 
 import "fmt"

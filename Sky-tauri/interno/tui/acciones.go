@@ -11,14 +11,14 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/skynative/skynative/interno/compilador"
-	"github.com/skynative/skynative/interno/configuracion"
-	"github.com/skynative/skynative/interno/diagnostico"
-	"github.com/skynative/skynative/interno/generador"
-	"github.com/skynative/skynative/interno/herramientas"
-	"github.com/skynative/skynative/interno/icono"
-	"github.com/skynative/skynative/interno/instalador"
-	"github.com/skynative/skynative/interno/proyectos"
+	"github.com/skynative/sky-tauri/interno/compilador"
+	"github.com/skynative/sky-tauri/interno/configuracion"
+	"github.com/skynative/sky-tauri/interno/diagnostico"
+	"github.com/skynative/sky-tauri/interno/generador"
+	"github.com/skynative/sky-tauri/interno/herramientas"
+	"github.com/skynative/sky-tauri/interno/icono"
+	"github.com/skynative/sky-tauri/interno/instalador"
+	"github.com/skynative/sky-tauri/interno/proyectos"
 )
 
 // Mensajes internos de Bubble Tea.

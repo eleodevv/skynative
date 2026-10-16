@@ -9,12 +9,12 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/skynative/skynative/interno/compilador"
-	"github.com/skynative/skynative/interno/configuracion"
-	"github.com/skynative/skynative/interno/diagnostico"
-	"github.com/skynative/skynative/interno/herramientas"
-	"github.com/skynative/skynative/interno/instalador"
-	"github.com/skynative/skynative/interno/version"
+	"github.com/skynative/sky-tauri/interno/compilador"
+	"github.com/skynative/sky-tauri/interno/configuracion"
+	"github.com/skynative/sky-tauri/interno/diagnostico"
+	"github.com/skynative/sky-tauri/interno/herramientas"
+	"github.com/skynative/sky-tauri/interno/instalador"
+	"github.com/skynative/sky-tauri/interno/version"
 )
 
 // maxLineasLog limita la memoria dedicada al registro de compilación.

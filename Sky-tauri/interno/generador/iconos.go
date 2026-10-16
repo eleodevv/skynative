@@ -10,7 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/skynative/skynative/interno/icono"
+	"github.com/skynative/sky-tauri/interno/icono"
 )
 
 // Los iconos se generan por código para que el proyecto sea reproducible y no

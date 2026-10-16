@@ -17,9 +17,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/skynative/skynative/interno/configuracion"
-	"github.com/skynative/skynative/interno/diagnostico"
-	"github.com/skynative/skynative/interno/proyectos"
+	"github.com/skynative/sky-tauri/interno/configuracion"
+	"github.com/skynative/sky-tauri/interno/diagnostico"
+	"github.com/skynative/sky-tauri/interno/proyectos"
 )
 
 // estado identifica la pantalla activa.

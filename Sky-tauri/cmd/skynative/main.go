@@ -8,8 +8,8 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/skynative/skynative/interno/tui"
-	"github.com/skynative/skynative/interno/version"
+	"github.com/skynative/sky-tauri/interno/tui"
+	"github.com/skynative/sky-tauri/interno/version"
 )
 
 // mensajeAyuda es el texto que se muestra con -h/--help.

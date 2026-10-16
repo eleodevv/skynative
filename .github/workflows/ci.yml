@@ -27,13 +27,17 @@ jobs:
       # Se usa bash en los tres sistemas para que los comandos sean idénticos.
       - name: Formato (gofmt)
         shell: bash
+        working-directory: Sky-tauri
         run: test -z "$(gofmt -l .)" || { echo "Archivos sin formatear:"; gofmt -l .; exit 1; }
       - name: go vet
         shell: bash
+        working-directory: Sky-tauri
         run: go vet ./...
       - name: Pruebas
         shell: bash
+        working-directory: Sky-tauri
         run: go test ./...
       - name: Compilar el binario
         shell: bash
+        working-directory: Sky-tauri
         run: go build ./cmd/skynative

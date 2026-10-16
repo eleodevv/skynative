@@ -1,4 +1,4 @@
-module github.com/skynative/skynative
+module github.com/skynative/sky-tauri
 
 go 1.24.2
 

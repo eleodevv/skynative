@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/skynative/skynative/interno/configuracion"
+	"github.com/skynative/sky-tauri/interno/configuracion"
 )
 
 func TestGenerarProyectoCompleto(t *testing.T) {

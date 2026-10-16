@@ -22,6 +22,7 @@ jobs:
         with:
           go-version: "stable"
       - name: gofmt + go vet + pruebas
+        working-directory: Sky-tauri
         run: make verificar
 
   # 4-5. Compila los binarios y genera los checksums.
@@ -37,6 +38,7 @@ jobs:
         with:
           go-version: "stable"
       - name: Compilar todas las plataformas
+        working-directory: Sky-tauri
         env:
           VERSION: ${{ github.ref_name }}
           COMMIT: ${{ github.sha }}
@@ -45,12 +47,12 @@ jobs:
           export FECHA="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           make compilar-todas-plataformas
       - name: Prueba de humo del binario de Linux
-        run: ./dist/skynative-linux-amd64 --version
+        run: ./Sky-tauri/dist/skynative-linux-amd64 --version
       - name: Subir artefactos
         uses: actions/upload-artifact@v4
         with:
           name: binarios
-          path: dist/
+          path: Sky-tauri/dist/
 
   # 6-7. Publica la release con los artefactos y los instaladores.
   publicar:
