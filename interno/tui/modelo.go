@@ -42,6 +42,7 @@ const (
 	campoAlto
 	campoCarpeta
 	campoRedimensionable
+	campoEmpaquetar
 	campoCrear
 	numCampos
 )
@@ -72,6 +73,7 @@ type Modelo struct {
 	altoCampo       textinput.Model
 	campo           int
 	redimensionable bool
+	empaquetar      bool
 	carpeta         string
 	mensajeError    string
 
@@ -91,6 +93,7 @@ type Modelo struct {
 	exito         bool
 	resumen       string
 	detalle       []string
+	notas         []string
 	rutaProyecto  string
 	artefactos    []string
 	puedeCompilar bool
@@ -110,10 +113,11 @@ type Modelo struct {
 	instalandoHerramientas bool
 
 	// Listas
-	diagnosticos        []diagnostico.Estado
-	proyectos           []proyectos.Proyecto
-	indiceProyecto      int
-	confirmandoEliminar bool
+	diagnosticos            []diagnostico.Estado
+	proyectos               []proyectos.Proyecto
+	indiceProyecto          int
+	confirmandoEliminar     bool
+	confirmandoEliminarTodo bool
 }
 
 // NuevoModelo construye el modelo inicial.

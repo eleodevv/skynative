@@ -2,6 +2,8 @@ package generador
 
 import (
 	"encoding/json"
+	"image"
+	"image/color"
 	"image/png"
 	"os"
 	"path/filepath"
@@ -147,6 +149,38 @@ func TestGenerarIconosValidos(t *testing.T) {
 	}
 	if string(icns[:4]) != "icns" {
 		t.Error("cabecera ICNS no válida")
+	}
+}
+
+func TestGenerarUsaIconoPersonalizado(t *testing.T) {
+	base := t.TempDir()
+	cfg := configuracion.Nueva("https://ejemplo.com", "Personalizado")
+	cfg.DirectorioSalida = base
+
+	origen := image.NewRGBA(image.Rect(0, 0, 64, 64))
+	for y := 0; y < 64; y++ {
+		for x := 0; x < 64; x++ {
+			origen.Set(x, y, color.RGBA{R: 200, G: 30, B: 40, A: 255})
+		}
+	}
+	cfg.Icono = origen
+
+	res, err := Generar(cfg)
+	if err != nil {
+		t.Fatalf("Generar devolvió error: %v", err)
+	}
+	archivo, err := os.Open(filepath.Join(res.Directorio, "src-tauri", "icons", "icon.png"))
+	if err != nil {
+		t.Fatalf("no se pudo abrir icon.png: %v", err)
+	}
+	defer archivo.Close()
+	img, err := png.Decode(archivo)
+	if err != nil {
+		t.Fatalf("icon.png no es un PNG válido: %v", err)
+	}
+	r, g, b, a := img.At(256, 256).RGBA()
+	if r>>8 < 150 || g>>8 > 100 || a>>8 < 200 {
+		t.Errorf("el icono no parece provenir de la imagen base: r=%d g=%d b=%d a=%d", r>>8, g>>8, b>>8, a>>8)
 	}
 }
 

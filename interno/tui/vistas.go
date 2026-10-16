@@ -8,25 +8,34 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+const zonaAnchuraCompleta = 1 << 20
+
 // View dibuja la pantalla activa, centrada en la ventana.
 func (m Modelo) View() string {
+	contenido, _ := m.bloqueActual()
+	return m.centrar(contenido)
+}
+
+// bloqueActual construye el contenido sin centrar y las regiones clicables en
+// coordenadas relativas a ese contenido.
+func (m Modelo) bloqueActual() (string, []zona) {
 	switch m.estado {
 	case estadoMenu:
-		return m.vistaMenu()
+		return m.bloqueMenu()
 	case estadoFormulario:
-		return m.centrar(m.vistaFormulario())
+		return m.bloqueFormulario()
 	case estadoExplorador:
-		return m.centrar(m.vistaExplorador())
+		return m.bloqueExplorador()
 	case estadoProgreso:
-		return m.centrar(m.vistaProgreso())
+		return m.bloqueProgreso(), nil
 	case estadoResultado:
-		return m.centrar(m.vistaResultado())
+		return m.bloqueResultado()
 	case estadoLista:
-		return m.centrar(m.vistaLista())
+		return m.bloqueLista()
 	case estadoDiagnostico:
-		return m.centrar(m.vistaDiagnostico())
+		return m.bloqueDiagnostico(), nil
 	default:
-		return ""
+		return "", nil
 	}
 }
 
@@ -49,11 +58,6 @@ func (m Modelo) centrar(contenido string) string {
 	return lipgloss.Place(ancho, alto, lipgloss.Center, lipgloss.Center, contenido)
 }
 
-// panel envuelve un cuerpo en un recuadro con un título.
-func panel(titulo, cuerpo string) string {
-	return estiloPanel.Render(estiloTitulo.Render(titulo) + "\n\n" + cuerpo)
-}
-
 // marca resalta el campo enfocado.
 func (m Modelo) marca(indice int) string {
 	if m.campo == indice {
@@ -70,89 +74,115 @@ func (m Modelo) etiquetaCampo(indice int, texto string) string {
 	return estiloEtiquetaCampo.Render(texto)
 }
 
-func (m Modelo) vistaMenu() string {
+// bloqueMenu construye el menú principal con filas-botón clicables.
+func (m Modelo) bloqueMenu() (string, []zona) {
 	ancho, _ := m.dimensiones()
 
-	var cabecera string
+	var lineas []string
 	if ancho < anchoLogo("SKYNATIVE")+6 {
-		cabecera = estiloMarca.Render("◆ SKYNATIVE")
+		lineas = append(lineas, estiloMarca.Render("◆ SKYNATIVE"))
 	} else {
-		cabecera = dibujarLogo("SKYNATIVE")
+		lineas = append(lineas, strings.Split(dibujarLogo("SKYNATIVE"), "\n")...)
 	}
+	lineas = append(lineas,
+		"",
+		estiloSubtitulo.Render("☁  Convierte una URL en una aplicación de escritorio · Tauri v2"),
+		"")
 
-	subtitulo := estiloSubtitulo.Render("Convierte una URL en una aplicación de escritorio · Tauri v2")
-
-	const anchoFila = 40
-	filas := make([]string, len(opcionesMenu))
+	const anchoFila = 50
+	var zonas []zona
 	for i, opcion := range opcionesMenu {
 		texto := fmt.Sprintf("%d  %s", i+1, opcion)
-		if i == m.opcionMenu {
-			filas[i] = estiloSeleccion.Width(anchoFila).Render(" ❯ " + texto)
-		} else {
-			filas[i] = lipgloss.NewStyle().Width(anchoFila).Render("   " + texto)
-		}
+		lineas = append(lineas, botonLinea(texto, i == m.opcionMenu, anchoFila))
+		zonas = append(zonas, zona{
+			fila0: len(lineas) - 1, fila1: len(lineas),
+			col0: 0, col1: zonaAnchuraCompleta,
+			accion: zonaOpcionMenu, indice: i,
+		})
 	}
-	menu := estiloPanel.Render(strings.Join(filas, "\n"))
 
-	piezas := []string{cabecera, "", subtitulo, "", menu}
 	if m.chequeoHecho && !m.herramientasListas {
-		piezas = append(piezas, "",
+		lineas = append(lineas, "",
 			estiloAviso.Render("⚠ Faltan herramientas para compilar · elige «Instalar herramientas necesarias» (2)"))
 	}
-	piezas = append(piezas, "",
-		estiloAyuda.Render("↑↓ moverse · Enter seleccionar · 1-6 atajos · q salir"))
-	return m.centrar(lipgloss.JoinVertical(lipgloss.Center, piezas...))
+	lineas = append(lineas, "",
+		estiloAyuda.Render("↑↓ moverse · Enter seleccionar · 1-6 atajos · clic con el ratón · q salir"))
+	return strings.Join(lineas, "\n"), zonas
 }
 
-func (m Modelo) vistaFormulario() string {
-	var b strings.Builder
-	b.WriteString(fmt.Sprintf("%s %s\n   %s\n\n", m.marca(campoURL), m.etiquetaCampo(campoURL, "URL remota (http/https)"), m.url.View()))
-	b.WriteString(fmt.Sprintf("%s %s\n   %s\n\n", m.marca(campoNombre), m.etiquetaCampo(campoNombre, "Nombre de la aplicación"), m.nombre.View()))
+// bloqueFormulario construye el formulario de creación.
+func (m Modelo) bloqueFormulario() (string, []zona) {
+	var cuerpo []string
+	var zonas []zona
+	add := func(texto string) int {
+		cuerpo = append(cuerpo, texto)
+		return len(cuerpo) - 1
+	}
+	campo := func(inicio, fin, indice int) {
+		zonas = append(zonas, zona{fila0: inicio, fila1: fin, col0: 0, col1: zonaAnchuraCompleta, accion: zonaCampo, indice: indice})
+	}
 
-	dimensiones := lipgloss.JoinHorizontal(lipgloss.Top,
-		lipgloss.JoinVertical(lipgloss.Left,
-			m.marca(campoAncho)+" "+m.etiquetaCampo(campoAncho, "Ancho"),
-			"   "+m.anchoCampo.View()),
-		"     ",
-		lipgloss.JoinVertical(lipgloss.Left,
-			m.marca(campoAlto)+" "+m.etiquetaCampo(campoAlto, "Alto"),
-			"   "+m.altoCampo.View()),
+	i := add(m.marca(campoURL) + " " + m.etiquetaCampo(campoURL, "URL remota (http/https)"))
+	add("   " + m.url.View())
+	campo(i, i+2, campoURL)
+	add("")
+
+	i = add(m.marca(campoNombre) + " " + m.etiquetaCampo(campoNombre, "Nombre de la aplicación"))
+	add("   " + m.nombre.View())
+	campo(i, i+2, campoNombre)
+	add("")
+
+	etiquetasDim := m.marca(campoAncho) + " " + m.etiquetaCampo(campoAncho, "Ancho") +
+		"      " + m.marca(campoAlto) + " " + m.etiquetaCampo(campoAlto, "Alto")
+	filaDim := add(etiquetasDim)
+	add("   " + m.anchoCampo.View() + "      " + "   " + m.altoCampo.View())
+	zonas = append(zonas,
+		zona{fila0: filaDim, fila1: filaDim + 2, col0: 0, col1: 28, accion: zonaCampo, indice: campoAncho},
+		zona{fila0: filaDim, fila1: filaDim + 2, col0: 28, col1: zonaAnchuraCompleta, accion: zonaCampo, indice: campoAlto},
 	)
-	b.WriteString(dimensiones + "\n\n")
+	add("")
 
-	b.WriteString(fmt.Sprintf("%s %s\n   %s\n   %s\n\n",
-		m.marca(campoCarpeta),
-		m.etiquetaCampo(campoCarpeta, "Carpeta de salida"),
-		estiloRuta.Render(m.carpeta),
-		estiloAyuda.Render("Enter para abrir el explorador de carpetas")))
-	b.WriteString(fmt.Sprintf("%s %s  %s\n\n",
-		m.marca(campoRedimensionable),
-		m.etiquetaCampo(campoRedimensionable, "Ventana redimensionable"),
-		casilla(m.redimensionable)))
+	i = add(m.marca(campoCarpeta) + " " + m.etiquetaCampo(campoCarpeta, "Carpeta de salida"))
+	add("   " + estiloRuta.Render(m.carpeta))
+	add("   " + estiloAyuda.Render("Enter para abrir el explorador de carpetas"))
+	campo(i, i+3, campoCarpeta)
+	add("")
+
+	i = add(m.marca(campoRedimensionable) + " " + m.etiquetaCampo(campoRedimensionable, "Ventana redimensionable") + "  " + casilla(m.redimensionable))
+	campo(i, i+1, campoRedimensionable)
+
+	i = add(m.marca(campoEmpaquetar) + " " + m.etiquetaCampo(campoEmpaquetar, "Crear paquetes instalables (.deb/.app/.exe)") + "  " + casilla(m.empaquetar))
+	campo(i, i+1, campoEmpaquetar)
+	add("   " + estiloAyuda.Render("desactivado compila solo el binario (mucho más rápido)"))
+	add("")
 
 	if m.mensajeError != "" {
-		b.WriteString(estiloError.Render("✖ "+m.mensajeError) + "\n\n")
+		add(estiloError.Render("✖ " + m.mensajeError))
+		add("")
 	}
 
-	if m.campo == campoCrear {
-		b.WriteString(m.marca(campoCrear) + " " + estiloSeleccion.Render(" Crear aplicación ") + "\n")
-	} else {
-		b.WriteString("  " + estiloCorrecto.Render("Crear aplicación") + "\n")
-	}
+	botonCrear := strings.Split(renderBoton("Crear aplicación", false), "\n")
+	inicioBoton := len(cuerpo)
+	cuerpo = append(cuerpo, botonCrear...)
+	zonas = append(zonas, zona{fila0: inicioBoton, fila1: inicioBoton + len(botonCrear), col0: 0, col1: zonaAnchuraCompleta, accion: zonaBotonCrear})
 
-	cuerpo := b.String() + estiloAyuda.Render("\nTab/↑↓ moverse · Enter abrir o actuar · Espacio alternar · Ctrl+G crear · Esc volver")
-	return panel("Nueva aplicación", cuerpo)
+	add("")
+	add(estiloAyuda.Render("Tab/↑↓ moverse · Enter abrir o actuar · Espacio alternar · Ctrl+G crear · Esc volver"))
+
+	return m.conMarco("Nueva aplicación", cuerpo, zonas)
 }
 
-func (m Modelo) vistaExplorador() string {
+// bloqueExplorador construye el explorador de carpetas.
+func (m Modelo) bloqueExplorador() (string, []zona) {
 	_, alto := m.dimensiones()
 
-	var b strings.Builder
+	var cuerpo []string
+	var zonas []zona
 	if m.explorador.err != nil {
-		b.WriteString(estiloError.Render("No se pudo leer la carpeta: "+m.explorador.err.Error()) + "\n\n")
+		cuerpo = append(cuerpo, estiloError.Render("No se pudo leer la carpeta: "+m.explorador.err.Error()), "")
 	}
 
-	visibles := alto - 14
+	visibles := alto - 16
 	if visibles < 5 {
 		visibles = 5
 	}
@@ -165,6 +195,7 @@ func (m Modelo) vistaExplorador() string {
 		fin = len(m.explorador.entradas)
 	}
 
+	cuerpo = append(cuerpo, estiloRuta.Render(m.explorador.directorio), "")
 	for i := inicio; i < fin; i++ {
 		entrada := m.explorador.entradas[i]
 		etiqueta := entrada.etiqueta
@@ -172,18 +203,19 @@ func (m Modelo) vistaExplorador() string {
 			etiqueta = "▸ " + etiqueta
 		}
 		if i == m.explorador.indice {
-			b.WriteString(estiloSeleccion.Render("❯ "+etiqueta) + "\n")
+			cuerpo = append(cuerpo, estiloSeleccion.Render("❯ "+etiqueta))
 		} else {
-			b.WriteString("  " + etiqueta + "\n")
+			cuerpo = append(cuerpo, "  "+etiqueta)
 		}
+		zonas = append(zonas, zona{fila0: len(cuerpo) - 1, fila1: len(cuerpo), col0: 0, col1: zonaAnchuraCompleta, accion: zonaEntradaExplorador, indice: i})
 	}
+	cuerpo = append(cuerpo, estiloAyuda.Render("↑↓ moverse · Enter entrar/elegir · S usar esta carpeta · Retroceso subir · Inicio ~ · Esc cancelar"))
 
-	cuerpo := estiloRuta.Render(m.explorador.directorio) + "\n\n" + b.String() +
-		estiloAyuda.Render("\n↑↓ moverse · Enter entrar/elegir · S usar esta carpeta · Retroceso subir · Inicio ~ · Esc cancelar")
-	return panel("Elegir carpeta de salida", cuerpo)
+	return m.conMarco("Elegir carpeta de salida", cuerpo, zonas)
 }
 
-func (m Modelo) vistaProgreso() string {
+// bloqueProgreso construye la pantalla de progreso.
+func (m Modelo) bloqueProgreso() string {
 	accion := "Generando el proyecto…"
 	switch {
 	case m.compilandoAhora:
@@ -196,103 +228,153 @@ func (m Modelo) vistaProgreso() string {
 	cabecera := m.girador.View() + " " + estiloTitulo.Render(accion)
 	salida := estiloCaja.Render(m.registro.View())
 	return lipgloss.JoinVertical(lipgloss.Center,
+		estiloSubtitulo.Render("☁  Skynative está trabajando"),
+		"",
 		cabecera,
 		"",
 		salida,
 		"",
-		estiloAyuda.Render("↑↓ desplazar la salida · Esc cancelar"),
+		estiloAyuda.Render("↑↓ desplazar · rueda del ratón · Esc cancelar"),
 	)
 }
 
-func (m Modelo) vistaResultado() string {
-	var b strings.Builder
+// bloqueResultado construye la pantalla de resultado con botones de acción.
+func (m Modelo) bloqueResultado() (string, []zona) {
+	var cuerpo []string
 	if m.exito {
-		b.WriteString(estiloCorrecto.Render("✔ "+m.resumen) + "\n")
+		cuerpo = append(cuerpo, estiloCorrecto.Render("✔ "+m.resumen))
 	} else {
-		b.WriteString(estiloError.Render("✖ "+m.resumen) + "\n")
+		cuerpo = append(cuerpo, estiloError.Render("✖ "+m.resumen))
 	}
 
+	for _, nota := range m.notas {
+		cuerpo = append(cuerpo, estiloAviso.Render("⚠ "+nota))
+	}
 	if m.exito && m.chequeoHecho && !m.herramientasListas {
-		b.WriteString("\n" + estiloAviso.Render("⚠ Faltan herramientas para compilar · menú → «Instalar herramientas necesarias»") + "\n")
+		cuerpo = append(cuerpo, estiloAviso.Render("⚠ Faltan herramientas para compilar · menú → «Instalar herramientas necesarias»"))
 	}
-
 	if m.rutaProyecto != "" {
-		b.WriteString("\n" + estiloEtiquetaCampo.Render("Proyecto  ") + estiloRuta.Render(m.rutaProyecto) + "\n")
+		cuerpo = append(cuerpo, estiloEtiquetaCampo.Render("Proyecto  ")+estiloRuta.Render(m.rutaProyecto))
 	}
-
 	if m.instalado {
-		b.WriteString(estiloEtiquetaCampo.Render("Acceso    ") + "en el menú de aplicaciones (doble clic)\n")
+		cuerpo = append(cuerpo, estiloEtiquetaCampo.Render("Acceso    ")+"en el menú de aplicaciones (doble clic)")
 		if m.entradaEscritorio != "" {
-			b.WriteString(estiloEtiquetaCampo.Render("Lanzador  ") + estiloRuta.Render(m.entradaEscritorio) + "\n")
+			cuerpo = append(cuerpo, estiloEtiquetaCampo.Render("Lanzador  ")+estiloRuta.Render(m.entradaEscritorio))
 		}
 	}
-
 	if len(m.artefactos) > 0 {
-		b.WriteString("\n" + estiloEtiquetaCampo.Render("Artefactos") + "\n")
+		cuerpo = append(cuerpo, "")
+		cuerpo = append(cuerpo, estiloEtiquetaCampo.Render("Artefactos"))
 		for _, artefacto := range m.artefactos {
-			b.WriteString("  • " + artefacto + "\n")
+			cuerpo = append(cuerpo, "  • "+artefacto)
 		}
 	}
-
 	if len(m.detalle) > 0 {
-		b.WriteString("\n" + estiloEtiquetaCampo.Render("Últimas líneas de la salida") + "\n")
-		b.WriteString(estiloCaja.Render(strings.Join(m.detalle, "\n")) + "\n")
+		cuerpo = append(cuerpo, "")
+		cuerpo = append(cuerpo, estiloEtiquetaCampo.Render("Últimas líneas de la salida"))
+		for _, l := range m.detalle {
+			cuerpo = append(cuerpo, "  "+l)
+		}
 	}
+	cuerpo = append(cuerpo, "")
 
-	var ayudas []string
-	if m.puedeCompilar && m.exito {
-		ayudas = append(ayudas, "C compilar")
+	var botones []defBoton
+	if m.exito && m.puedeCompilar {
+		botones = append(botones, defBoton{texto: "Compilar", accion: zonaBotonResultado, indice: 0})
 	}
-	if m.puedeInstalar && m.exito {
-		ayudas = append(ayudas, "I instalar en el sistema")
+	if m.exito && m.puedeInstalar && !m.instalado {
+		botones = append(botones, defBoton{texto: "Instalar en el sistema", accion: zonaBotonResultado, indice: 1})
 	}
 	if m.rutaProyecto != "" {
-		ayudas = append(ayudas, "O abrir carpeta")
+		botones = append(botones, defBoton{texto: "Abrir carpeta", accion: zonaBotonResultado, indice: 2})
 	}
-	ayudas = append(ayudas, "Enter crear otra", "Esc menú")
+	botones = append(botones,
+		defBoton{texto: "Crear otra", accion: zonaBotonResultado, indice: 3},
+		defBoton{texto: "Menú", accion: zonaBotonResultado, indice: 4},
+	)
+
+	lineasBoton, zonasBoton := filaBotones(botones)
+	inicio := len(cuerpo)
+	cuerpo = append(cuerpo, lineasBoton...)
+	desplazarZonas(zonasBoton, inicio, 0, 0)
+
+	cuerpo = append(cuerpo, "", estiloAyuda.Render("C compilar · I instalar · O abrir carpeta · Enter crear otra · Esc menú"))
 
 	titulo := "Resultado"
 	if m.exito {
 		titulo = "Listo"
 	}
-	return panel(titulo, b.String()+estiloAyuda.Render("\n"+strings.Join(ayudas, " · ")))
+	return m.conMarco(titulo, cuerpo, zonasBoton)
 }
 
-func (m Modelo) vistaLista() string {
-	var b strings.Builder
+// bloqueLista construye la lista de proyectos con acciones.
+func (m Modelo) bloqueLista() (string, []zona) {
+	var cuerpo []string
+	var zonas []zona
 	if len(m.proyectos) == 0 {
-		b.WriteString("Todavía no hay proyectos.\nCrea uno desde el menú principal.")
-		cuerpo := b.String() + estiloAyuda.Render("\nEsc volver al menú")
-		return panel("Proyectos registrados", cuerpo)
+		cuerpo = append(cuerpo,
+			"Todavía no hay proyectos.",
+			"Crea uno desde el menú principal.",
+			"",
+			estiloAyuda.Render("Esc volver al menú"))
+		return m.conMarco("Proyectos registrados", cuerpo, zonas)
 	}
 
 	for i, p := range m.proyectos {
 		if i > 0 {
-			b.WriteString("\n")
+			cuerpo = append(cuerpo, "")
 		}
+		inicio := len(cuerpo)
 		nombre := estiloMarca.Render(p.Nombre)
 		if i == m.indiceProyecto {
 			nombre = estiloSeleccion.Render("❯ " + p.Nombre)
 		}
-		b.WriteString(nombre + "\n")
-		b.WriteString("  " + estiloEtiquetaCampo.Render("identificador  ") + p.Identificador + "\n")
-		b.WriteString("  " + estiloEtiquetaCampo.Render("url            ") + p.URL + "\n")
-		b.WriteString("  " + estiloEtiquetaCampo.Render("ruta           ") + estiloRuta.Render(p.Ruta) + "\n")
+		cuerpo = append(cuerpo, nombre)
+		cuerpo = append(cuerpo, "  "+estiloEtiquetaCampo.Render("identificador  ")+p.Identificador)
+		cuerpo = append(cuerpo, "  "+estiloEtiquetaCampo.Render("url            ")+p.URL)
+		cuerpo = append(cuerpo, "  "+estiloEtiquetaCampo.Render("ruta           ")+estiloRuta.Render(p.Ruta))
+		zonas = append(zonas, zona{fila0: inicio, fila1: len(cuerpo), col0: 0, col1: zonaAnchuraCompleta, accion: zonaProyecto, indice: i})
+	}
+	cuerpo = append(cuerpo, "")
+
+	var botones []defBoton
+	switch {
+	case m.confirmandoEliminar:
+		cuerpo = append(cuerpo, estiloError.Render("¿Eliminar «"+m.proyectos[m.indiceProyecto].Nombre+"»? Se borrarán su acceso, su carpeta y el registro."))
+		botones = []defBoton{
+			{texto: "Sí, eliminar", accion: zonaBotonConfirmarSi, peligro: true},
+			{texto: "Cancelar", accion: zonaBotonConfirmarNo},
+		}
+	case m.confirmandoEliminarTodo:
+		botones = []defBoton{
+			{texto: "Sí, eliminar todo", accion: zonaBotonConfirmarSi, peligro: true},
+			{texto: "Cancelar", accion: zonaBotonConfirmarNo},
+		}
+	default:
+		botones = []defBoton{
+			{texto: "Eliminar seleccionado", accion: zonaBotonEliminar, peligro: true},
+			{texto: "Eliminar todo", accion: zonaBotonEliminarTodo, peligro: true},
+		}
 	}
 
-	ayuda := "\n↑↓ elegir · D eliminar del registro · Esc volver al menú"
-	if m.confirmandoEliminar {
-		ayuda = "\n" + estiloAviso.Render("¿Eliminar «"+m.proyectos[m.indiceProyecto].Nombre+"» del registro? (no borra archivos)  s/n")
-	}
-	cuerpo := b.String() + estiloAyuda.Render(ayuda)
-	return panel("Proyectos registrados", cuerpo)
+	lineasBoton, zonasBoton := filaBotones(botones)
+	inicio := len(cuerpo)
+	cuerpo = append(cuerpo, lineasBoton...)
+	desplazarZonas(zonasBoton, inicio, 0, 0)
+	zonas = append(zonas, zonasBoton...)
+
+	cuerpo = append(cuerpo, "",
+		estiloAyuda.Render("↑↓ elegir · D eliminar · A eliminar todo · Esc volver al menú"))
+
+	return m.conMarco("Proyectos registrados", cuerpo, zonas)
 }
 
-func (m Modelo) vistaDiagnostico() string {
-	var b strings.Builder
+// bloqueDiagnostico construye la pantalla de diagnóstico.
+func (m Modelo) bloqueDiagnostico() string {
+	var cuerpo []string
 	for _, e := range m.diagnosticos {
 		if e.OK {
-			b.WriteString(estiloCorrecto.Render("✔ ") + estiloEtiquetaCampo.Render(e.Nombre) + "  " + e.Detalle + "\n")
+			cuerpo = append(cuerpo, estiloCorrecto.Render("✔ ")+estiloEtiquetaCampo.Render(e.Nombre)+"  "+e.Detalle)
 			continue
 		}
 		marca := "✖ "
@@ -301,13 +383,22 @@ func (m Modelo) vistaDiagnostico() string {
 			marca = "• "
 			estilo = estiloAviso
 		}
-		b.WriteString(estilo.Render(marca) + estiloEtiquetaCampo.Render(e.Nombre) + "  " + e.Detalle + "\n")
+		cuerpo = append(cuerpo, estilo.Render(marca)+estiloEtiquetaCampo.Render(e.Nombre)+"  "+e.Detalle)
 		if e.Ayuda != "" {
-			b.WriteString("    " + estiloAviso.Render("→ "+e.Ayuda) + "\n")
+			cuerpo = append(cuerpo, "    "+estiloAviso.Render("→ "+e.Ayuda))
 		}
 	}
-	cuerpo := b.String() + estiloAyuda.Render("\nEsc volver al menú")
-	return panel("Diagnóstico del entorno", cuerpo)
+	cuerpo = append(cuerpo, "", estiloAyuda.Render("Esc volver al menú"))
+	lineas, _, _ := marco("Diagnóstico del entorno", cuerpo)
+	return strings.Join(lineas, "\n")
+}
+
+// conMarco envuelve el cuerpo en el recuadro y desplaza las zonas para que sus
+// coordenadas sean relativas al contenido final.
+func (m Modelo) conMarco(titulo string, cuerpo []string, zonas []zona) (string, []zona) {
+	lineas, df, dc := marco(titulo, cuerpo)
+	desplazarZonas(zonas, df, dc, 0)
+	return strings.Join(lineas, "\n"), zonas
 }
 
 // interfaz de compilación dinámica: evita que el compilador se queje de que

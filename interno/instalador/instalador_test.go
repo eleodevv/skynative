@@ -103,6 +103,55 @@ func TestInstalarLinux(t *testing.T) {
 	}
 }
 
+func TestDesinstalarLinux(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("la desinstalación XDG solo aplica a Linux")
+	}
+	base := t.TempDir()
+	exe := filepath.Join(base, "bin", "miapp")
+	if err := os.MkdirAll(filepath.Dir(exe), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(exe, []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	icono := filepath.Join(base, "128x128.png")
+	if err := os.WriteFile(icono, []byte("PNG"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	datos := t.TempDir()
+
+	res, err := instalarLinux(Opciones{
+		Nombre:          "Mi App",
+		Slug:            "mi-app",
+		Ejecutable:      exe,
+		IconoOrigen:     icono,
+		DirectorioDatos: datos,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	eliminados, err := desinstalarLinux(Opciones{Slug: "mi-app", DirectorioDatos: datos})
+	if err != nil {
+		t.Fatalf("desinstalarLinux devolvió error: %v", err)
+	}
+	if len(eliminados) != 2 {
+		t.Errorf("se esperaban 2 elementos eliminados, hay %d: %v", len(eliminados), eliminados)
+	}
+	if _, err := os.Stat(res.Entrada); !os.IsNotExist(err) {
+		t.Error("la entrada .desktop debería haberse eliminado")
+	}
+	if _, err := os.Stat(res.Icono); !os.IsNotExist(err) {
+		t.Error("el icono debería haberse eliminado")
+	}
+
+	// Desinstalar de nuevo no debe fallar.
+	if _, err := desinstalarLinux(Opciones{Slug: "mi-app", DirectorioDatos: datos}); err != nil {
+		t.Errorf("desinstalar algo ya ausente no debería fallar: %v", err)
+	}
+}
+
 func TestInstalarLinuxSinEjecutable(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		t.Skip("la instalación XDG solo aplica a Linux")

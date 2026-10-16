@@ -9,6 +9,8 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+
+	"github.com/skynative/skynative/interno/icono"
 )
 
 // Los iconos se generan por código para que el proyecto sea reproducible y no
@@ -27,9 +29,13 @@ type entradaIcns struct {
 	img  *image.RGBA
 }
 
-// generarIconos crea el conjunto de iconos por defecto en la carpeta indicada
-// y devuelve las rutas escritas.
-func generarIconos(carpeta string) ([]string, error) {
+// generarIconos crea el conjunto de iconos en la carpeta indicada y devuelve
+// las rutas escritas.
+//
+// Si base no es nil, se usa como imagen de partida (por ejemplo, el icono del
+// sitio web) y se escala a cada tamaño. Si es nil, se dibuja el icono por
+// defecto de Skynative.
+func generarIconos(carpeta string, base image.Image) ([]string, error) {
 	if err := os.MkdirAll(carpeta, 0o755); err != nil {
 		return nil, fmt.Errorf("no se pudo crear la carpeta de iconos %q: %w", carpeta, err)
 	}
@@ -37,7 +43,11 @@ func generarIconos(carpeta string) ([]string, error) {
 	tamanos := []int{16, 32, 48, 64, 128, 256, 512}
 	imgs := make(map[int]*image.RGBA, len(tamanos))
 	for _, t := range tamanos {
-		imgs[t] = dibujarIcono(t)
+		if base != nil {
+			imgs[t] = icono.Escalar(base, t)
+		} else {
+			imgs[t] = dibujarIcono(t)
+		}
 	}
 
 	var archivos []string

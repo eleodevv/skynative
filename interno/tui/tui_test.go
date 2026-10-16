@@ -344,6 +344,26 @@ func TestEliminarProyectoDesdeLista(t *testing.T) {
 	}
 }
 
+// TestEliminarTodoDesdeLista comprueba el borrado completo del registro.
+func TestEliminarTodoDesdeLista(t *testing.T) {
+	t.Setenv("SKYNATIVE_DIRECTORIO_CONFIG", t.TempDir())
+	m := NuevoModelo()
+	m.proyectos = []proyectos.Proyecto{
+		{Nombre: "Uno", Ruta: filepath.Join(t.TempDir(), "uno")},
+		{Nombre: "Dos", Ruta: filepath.Join(t.TempDir(), "dos")},
+	}
+	m.estado = estadoLista
+
+	m = aplicar(m, runas("A"))
+	if !m.confirmandoEliminarTodo {
+		t.Fatal("A debería pedir confirmación para eliminar todo")
+	}
+	_, cmd := m.Update(runas("s"))
+	if cmd == nil {
+		t.Fatal("confirmar debería devolver un comando de borrado total")
+	}
+}
+
 // TestListaNavegacionNoSaleDeRango comprueba que la selección no se pasa.
 func TestListaNavegacionNoSaleDeRango(t *testing.T) {
 	m := NuevoModelo()
@@ -356,6 +376,114 @@ func TestListaNavegacionNoSaleDeRango(t *testing.T) {
 	m = aplicar(m, tecla(tea.KeyUp))
 	if m.indiceProyecto != 0 {
 		t.Errorf("el índice no debería ser negativo, es %d", m.indiceProyecto)
+	}
+}
+
+// TestZonasMenuAlineadas comprueba que cada zona del menú apunta a su fila.
+func TestZonasMenuAlineadas(t *testing.T) {
+	m := NuevoModelo()
+	m.ancho, m.alto = 120, 40
+	contenido, zonas := m.bloqueActual()
+	lineas := strings.Split(contenido, "\n")
+	for _, z := range zonas {
+		if z.accion != zonaOpcionMenu {
+			continue
+		}
+		if z.fila0 >= len(lineas) || !strings.Contains(lineas[z.fila0], opcionesMenu[z.indice]) {
+			t.Errorf("la zona del menú %d no apunta a su opción", z.indice)
+		}
+	}
+}
+
+// TestZonasListaAlineadas comprueba que cada zona de proyecto apunta a su fila.
+func TestZonasListaAlineadas(t *testing.T) {
+	m := NuevoModelo()
+	m.ancho, m.alto = 120, 40
+	m.estado = estadoLista
+	m.proyectos = []proyectos.Proyecto{{Nombre: "Alfa", Ruta: "/tmp/a"}, {Nombre: "Beta", Ruta: "/tmp/b"}}
+	contenido, zonas := m.bloqueActual()
+	lineas := strings.Split(contenido, "\n")
+	for _, z := range zonas {
+		if z.accion != zonaProyecto {
+			continue
+		}
+		if z.fila0 >= len(lineas) || !strings.Contains(lineas[z.fila0], m.proyectos[z.indice].Nombre) {
+			t.Errorf("la zona del proyecto %d no apunta a su fila", z.indice)
+		}
+	}
+}
+
+// clicEn simula un clic del ratón sobre la primera zona que coincide con la
+// acción e índice indicados.
+func clicEn(t *testing.T, m Modelo, accion accionZona, indice int) (tea.Model, tea.Cmd) {
+	t.Helper()
+	if m.ancho == 0 {
+		m.ancho = 120
+	}
+	if m.alto == 0 {
+		m.alto = 40
+	}
+	contenido, zonas := m.bloqueActual()
+	x, y := desplazamientoCentrado(m.ancho, m.alto, contenido)
+	for _, z := range zonas {
+		if z.accion == accion && z.indice == indice {
+			msg := tea.MouseMsg{X: x + z.col0 + 1, Y: y + z.fila0, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft}
+			return m.actualizarRaton(msg)
+		}
+	}
+	t.Fatalf("no se encontró ninguna zona con acción %d e índice %d", accion, indice)
+	return m, nil
+}
+
+// TestRatonMenuAbreFormulario comprueba que se puede crear una aplicación con
+// un clic en el menú.
+func TestRatonMenuAbreFormulario(t *testing.T) {
+	m := NuevoModelo()
+	actualizado, _ := clicEn(t, m, zonaOpcionMenu, 0)
+	if actualizado.(Modelo).estado != estadoFormulario {
+		t.Errorf("un clic en «Crear aplicación» debería abrir el formulario, estado = %v", actualizado.(Modelo).estado)
+	}
+}
+
+// TestRatonMenuListaProyectos comprueba que la opción de listar responde al clic.
+func TestRatonMenuListaProyectos(t *testing.T) {
+	t.Setenv("SKYNATIVE_DIRECTORIO_CONFIG", t.TempDir())
+	m := NuevoModelo()
+	_, cmd := clicEn(t, m, zonaOpcionMenu, 2)
+	if cmd == nil {
+		t.Error("un clic en «Listar proyectos» debería cargar el registro")
+	}
+}
+
+// TestRatonSeleccionaProyecto comprueba que un clic en una fila la selecciona.
+func TestRatonSeleccionaProyecto(t *testing.T) {
+	m := NuevoModelo()
+	m.proyectos = []proyectos.Proyecto{
+		{Nombre: "Uno", Ruta: "/tmp/uno"},
+		{Nombre: "Dos", Ruta: "/tmp/dos"},
+	}
+	m.estado = estadoLista
+	actualizado, _ := clicEn(t, m, zonaProyecto, 1)
+	if actualizado.(Modelo).indiceProyecto != 1 {
+		t.Errorf("debería seleccionar el segundo proyecto, índice = %d", actualizado.(Modelo).indiceProyecto)
+	}
+}
+
+// TestRatonEliminarProyecto comprueba el flujo de borrado con el ratón.
+func TestRatonEliminarProyecto(t *testing.T) {
+	t.Setenv("SKYNATIVE_DIRECTORIO_CONFIG", t.TempDir())
+	m := NuevoModelo()
+	m.proyectos = []proyectos.Proyecto{{Nombre: "Uno", Ruta: "/tmp/uno"}}
+	m.estado = estadoLista
+
+	actualizado, _ := clicEn(t, m, zonaBotonEliminar, 0)
+	m = actualizado.(Modelo)
+	if !m.confirmandoEliminar {
+		t.Fatal("el botón «Eliminar seleccionado» debería pedir confirmación")
+	}
+	_, cmd := clicEn(t, m, zonaBotonConfirmarSi, 0)
+	if cmd == nil {
+		t.Fatal("confirmar con el ratón debería devolver el comando de borrado")
 	}
 }
 

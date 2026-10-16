@@ -27,6 +27,37 @@ el entorno listo, crear una aplicación **la genera y la compila automáticament
 El resultado es un proyecto Tauri v2 válido y, tras compilarlo, una aplicación
 de escritorio que abre una ventana nativa cargando la página indicada.
 
+Toda la interfaz se puede manejar con el **teclado o el ratón** (clic en las
+opciones del menú, en los proyectos y en los botones de acción) y usa un tema
+«cielo» acorde con el nombre de la herramienta.
+
+### Crear una aplicación
+
+El formulario toma la URL, el nombre, el tamaño, la carpeta de salida y dos
+casillas:
+
+- **Ventana redimensionable**: si el usuario puede cambiar el tamaño.
+- **Crear paquetes instalables (.deb/.app/.exe)**: desactivada por defecto.
+  Desactivada solo compila el binario (`cargo tauri build --no-bundle`), que es
+  **mucho más rápido** y suficiente para instalar la app con Skynative; actívala
+  si quieres un paquete de instalación del sistema.
+
+Antes de generar, Skynative **descarga el icono oficial del sitio** (favicon,
+`apple-touch-icon` o `/favicon.ico`, incluidos los ICO) y lo usa como icono de
+la aplicación; si no lo encuentra, dibuja el icono por defecto.
+
+### Eliminar aplicaciones
+
+En **Listar proyectos**:
+
+- `↑`/`↓` o clic para seleccionar.
+- `D` o **Eliminar seleccionado**: desinstala el acceso del sistema, borra la
+  carpeta del proyecto y lo quita del registro.
+- `A` o **Eliminar todo**: borra todas las aplicaciones registradas, sus
+  carpetas y el registro completo.
+
+Estas acciones piden confirmación y no se pueden deshacer.
+
 Sitio del proyecto: <https://eleodevv.github.io/skynative/>
 
 ---
@@ -65,6 +96,7 @@ skynative/
 │   ├── tui/                     Interfaz de terminal (Bubble Tea): modelo, vistas, acciones, explorador
 │   ├── configuracion/           Modelo de datos y validación de entradas
 │   ├── generador/               Creación del proyecto Tauri v2 y de los iconos
+│   ├── icono/                  Descarga del icono oficial del sitio (favicon/ICO)
 │   ├── compilador/              Ejecución de la CLI de Tauri y descubrimiento de artefactos
 │   ├── instalador/              Registro de la app compilada en el menú del sistema
 │   ├── herramientas/            Instalación de Rust, la CLI de Tauri y dependencias
@@ -90,14 +122,17 @@ skynative/
    recurre a los paquetes internos.
 4. `configuracion` normaliza y valida: URL, nombre, dimensiones, versión,
    identificador y nombre de paquete.
-5. `generador.Generar` escribe el proyecto: plantillas incrustadas
-   (`embed`), `tauri.conf.json` serializado como JSON y los iconos PNG/ICO/ICNS
-   generados por código. La TUI recibe la salida en vivo mientras trabaja.
-6. `proyectos` registra la aplicación.
-7. Si el entorno está listo, la compilación se **encadena automáticamente**
-   tras generar. `compilador.Compilar` lanza `cargo tauri build` y busca los
-   paquetes resultantes; la salida se muestra en la pantalla de progreso.
-8. Tras compilar, `instalador.Instalar` registra la app en el sistema (entrada
+5. `icono.Descargar` obtiene el icono del sitio (favicon o `apple-touch-icon`);
+   si falla, se usa el icono por defecto.
+6. `generador.Generar` escribe el proyecto: plantillas incrustadas (`embed`),
+   `tauri.conf.json` serializado como JSON y los iconos PNG/ICO/ICNS escalados a
+   partir de la imagen elegida. La TUI recibe la salida en vivo mientras trabaja.
+7. `proyectos` registra la aplicación.
+8. Si el entorno está listo, la compilación se **encadena automáticamente**
+   tras generar. `compilador.Compilar` lanza `cargo tauri build` (con
+   `--no-bundle` salvo que se pidan paquetes) y busca los artefactos; la salida
+   se muestra en la pantalla de progreso.
+9. Tras compilar, `instalador.Instalar` registra la app en el sistema (entrada
    `.desktop` e icono en Linux, copia a `~/Applications` en macOS) para poder
    abrirla con doble clic y encontrarla al buscar.
 
@@ -418,12 +453,17 @@ La aplicación generada carga la URL remota en la WebView del sistema
   y toda la validación (`ValidarURL`, `ValidarNombre`, `ValidarDimensiones`,
   `GenerarIdentificador`, `GenerarNombrePaquete`, `GenerarSlug`).
 - **`interno/generador`** — `Generar` escribe el proyecto; `iconos.go` produce
-  los PNG, ICO e ICNS por código; `construirTauriConf` serializa la
-  configuración de Tauri.
-- **`interno/compilador`** — `Compilar` lanza la CLI de Tauri;
+  los PNG, ICO e ICNS (a partir del icono recibido o dibujados por código);
+  `construirTauriConf` serializa la configuración de Tauri.
+- **`interno/icono`** — `Descargar` obtiene el icono del sitio (`<link rel=icon>`,
+  `apple-touch-icon` o `/favicon.ico`), incluidos los ICO con PNG o mapa de bits;
+  `Escalar` redimensiona la imagen a cada tamaño.
+- **`interno/compilador`** — `Compilar` lanza la CLI de Tauri (con `--no-bundle`
+  si no se piden paquetes y como reserva si el empaquetado falla);
   `BuscarArtefactos` localiza los paquetes y el binario.
 - **`interno/instalador`** — `Instalar` registra la app compilada en el menú del
-  sistema: entrada `.desktop` e icono (Linux) o copia del `.app` (macOS).
+  sistema (entrada `.desktop` e icono en Linux, copia del `.app` en macOS);
+  `Desinstalar` revierte esa instalación.
 - **`interno/herramientas`** — `Plan` describe los pasos para instalar Rust, la
   CLI de Tauri y las dependencias nativas; `Instalar` los ejecuta con la salida
   en vivo (sin `shell=true`; rustup se descarga con `net/http` y se ejecuta el
@@ -431,14 +471,15 @@ La aplicación generada carga la URL remota en la WebView del sistema
 - **`interno/diagnostico`** — `Ejecutar` comprueba Go, Rust, Cargo, la CLI de
   Tauri y las dependencias por plataforma.
 - **`interno/proyectos`** — registro JSON en el directorio de configuración del
-  usuario (`SKYNATIVE_DIRECTORIO_CONFIG` lo sobrescribe). `Eliminar` quita una
-  entrada del registro sin borrar archivos. En la pantalla **Listar proyectos**
-  la tecla `D` pide confirmación y elimina el proyecto seleccionado del registro
-  (no toca sus archivos ni la aplicación instalada).
+  usuario (`SKYNATIVE_DIRECTORIO_CONFIG` lo sobrescribe). `Eliminar` borra una
+  entrada y `Limpiar` vacía el registro. En **Listar proyectos**, `D` elimina el
+  proyecto seleccionado (acceso del sistema + carpeta + registro) y `A` elimina
+  todo, ambas con confirmación.
 - **`interno/tui`** — interfaz de terminal: `modelo.go` (estado), `vistas.go`
-  (render con Lip Gloss), `logo.go` (logotipo centrado), `actualizar.go`
-  (`Update`), `acciones.go` (comandos y mensajes), `explorador.go` (selector de
-  carpetas) y `estilos.go`.
+  (render con Lip Gloss y zonas clicables), `raton.go` (soporte de ratón),
+  `logo.go` (logotipo centrado), `actualizar.go` (`Update`), `acciones.go`
+  (comandos y mensajes), `explorador.go` (selector de carpetas) y `estilos.go`
+  (tema «cielo»).
 - **`plantillas`** — archivos de Tauri incrustados con `go:embed`.
 
 ### Convenciones

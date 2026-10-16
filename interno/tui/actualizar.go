@@ -38,6 +38,9 @@ func (m Modelo) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m.actualizarTecla(msg)
 
+	case tea.MouseMsg:
+		return m.actualizarRaton(msg)
+
 	case msgGenerado:
 		return m.actualizarGenerado(msg)
 	case msgLineaLog:
@@ -80,6 +83,13 @@ func (m Modelo) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.estado = estadoLista
 		return m, nil
 	case msgProyectoEliminado:
+		if msg.err != nil {
+			m.exito = false
+			m.resumen = "No se pudo eliminar: " + msg.err.Error()
+			m.estado = estadoResultado
+			return m, nil
+		}
+		m.confirmandoEliminarTodo = false
 		return m, proyectosCmd()
 	case msgError:
 		m.exito = false
@@ -137,6 +147,20 @@ func (m Modelo) actualizarLista(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	if m.confirmandoEliminarTodo {
+		switch msg.String() {
+		case "s", "y", "enter":
+			m.confirmandoEliminarTodo = false
+			if len(m.proyectos) == 0 {
+				return m, nil
+			}
+			return m, eliminarTodoCmd(m.proyectos)
+		case "n", "esc", "q":
+			m.confirmandoEliminarTodo = false
+		}
+		return m, nil
+	}
+
 	switch msg.String() {
 	case "esc", "q":
 		m.estado = estadoMenu
@@ -151,6 +175,10 @@ func (m Modelo) actualizarLista(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "d", "delete":
 		if len(m.proyectos) > 0 {
 			m.confirmandoEliminar = true
+		}
+	case "a", "A":
+		if len(m.proyectos) > 0 {
+			m.confirmandoEliminarTodo = true
 		}
 	}
 	return m, nil
@@ -235,6 +263,9 @@ func (m Modelo) actualizarFormulario(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case campoRedimensionable:
 			m.redimensionable = !m.redimensionable
 			return m, nil
+		case campoEmpaquetar:
+			m.empaquetar = !m.empaquetar
+			return m, nil
 		case campoCrear:
 			return m.lanzarGeneracion()
 		default:
@@ -243,8 +274,12 @@ func (m Modelo) actualizarFormulario(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 	case " ":
-		if m.campo == campoRedimensionable {
+		switch m.campo {
+		case campoRedimensionable:
 			m.redimensionable = !m.redimensionable
+			return m, nil
+		case campoEmpaquetar:
+			m.empaquetar = !m.empaquetar
 			return m, nil
 		}
 	case "ctrl+g":
@@ -297,20 +332,26 @@ func (m Modelo) actualizarExplorador(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.estado = estadoFormulario
 		m.enfocar()
 	case "enter":
-		entrada, ok := m.explorador.seleccionado()
-		if !ok {
-			return m, nil
-		}
-		switch entrada.accion {
-		case accionSeleccionar:
-			m.carpeta = entrada.ruta
-			m.estado = estadoFormulario
-			m.enfocar()
-		case accionSubir:
-			m.explorador.subir()
-		default:
-			m.explorador.entrar(entrada.ruta)
-		}
+		return m.exploradorEnter()
+	}
+	return m, nil
+}
+
+// exploradorEnter entra en la carpeta seleccionada o la elige como salida.
+func (m Modelo) exploradorEnter() (tea.Model, tea.Cmd) {
+	entrada, ok := m.explorador.seleccionado()
+	if !ok {
+		return m, nil
+	}
+	switch entrada.accion {
+	case accionSeleccionar:
+		m.carpeta = entrada.ruta
+		m.estado = estadoFormulario
+		m.enfocar()
+	case accionSubir:
+		m.explorador.subir()
+	default:
+		m.explorador.entrar(entrada.ruta)
 	}
 	return m, nil
 }
@@ -411,10 +452,14 @@ func (m Modelo) lanzarGeneracion() (Modelo, tea.Cmd) {
 	m.instalado = false
 	m.entradaEscritorio = ""
 	m.rutaProyecto = filepath.Join(cfg.DirectorioSalida, cfg.NombrePaquete)
+	m.notas = nil
 	m.estado = estadoProgreso
 	m.trabajando = true
 	m.compilandoAhora = false
-	m.lineas = []string{"Generando el proyecto Tauri v2 en " + m.rutaProyecto + " ..."}
+	m.lineas = []string{
+		"Buscando el icono oficial del sitio…",
+		"Generando el proyecto Tauri v2 en " + m.rutaProyecto + " ...",
+	}
 	m.registro.SetContent(strings.Join(m.lineas, "\n"))
 	m.girador = nuevoGirador()
 	return m, tea.Batch(m.girador.Tick, generarCmd(cfg))
@@ -425,7 +470,11 @@ func (m Modelo) iniciarCompilacion() (Modelo, tea.Cmd) {
 	ctx, cancelar := context.WithCancel(context.Background())
 	m.cancelar = cancelar
 	m.canalLog = make(chan string, 4096)
-	m.lineas = []string{"Compilando " + m.rutaProyecto + " con Tauri..."}
+	if m.empaquetar {
+		m.lineas = []string{"Compilando " + m.rutaProyecto + " con Tauri (con empaquetado)…"}
+	} else {
+		m.lineas = []string{"Compilando " + m.rutaProyecto + " con Tauri (solo binario, más rápido)…"}
+	}
 	m.registro.SetContent(strings.Join(m.lineas, "\n"))
 	m.estado = estadoProgreso
 	m.trabajando = true
@@ -438,7 +487,7 @@ func (m Modelo) iniciarCompilacion() (Modelo, tea.Cmd) {
 	return m, tea.Batch(
 		m.girador.Tick,
 		escucharLog(m.canalLog),
-		compilarCmd(ctx, m.rutaProyecto, m.canalLog),
+		compilarCmd(ctx, m.rutaProyecto, compilador.Opciones{SinBundle: !m.empaquetar}, m.canalLog),
 	)
 }
 
@@ -500,6 +549,9 @@ func (m Modelo) actualizarGenerado(msg msgGenerado) (tea.Model, tea.Cmd) {
 	m.puedeCompilar = true
 	m.rutaProyecto = msg.res.Directorio
 	m.artefactos = nil
+	if msg.nota != "" {
+		m.notas = append(m.notas, msg.nota)
+	}
 	// Si el entorno está listo, encadenamos la compilación automáticamente.
 	if m.herramientasListas {
 		m.resumen = fmt.Sprintf("Proyecto «%s» generado. Compilando automáticamente…", msg.res.NombrePaquete)

@@ -18,6 +18,7 @@ func ejecutarConEntradaSalida(entrada io.Reader, salida io.Writer) error {
 	programa := tea.NewProgram(
 		NuevoModelo(),
 		tea.WithAltScreen(),
+		tea.WithMouseCellMotion(),
 		tea.WithInput(entrada),
 		tea.WithOutput(salida),
 	)

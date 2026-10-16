@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,6 +16,7 @@ import (
 	"github.com/skynative/skynative/interno/diagnostico"
 	"github.com/skynative/skynative/interno/generador"
 	"github.com/skynative/skynative/interno/herramientas"
+	"github.com/skynative/skynative/interno/icono"
 	"github.com/skynative/skynative/interno/instalador"
 	"github.com/skynative/skynative/interno/proyectos"
 )
@@ -22,8 +24,9 @@ import (
 // Mensajes internos de Bubble Tea.
 type (
 	msgGenerado struct {
-		res generador.Resultado
-		err error
+		res  generador.Resultado
+		err  error
+		nota string
 	}
 	msgLineaLog   string
 	msgLogCerrado struct{}
@@ -40,13 +43,21 @@ type (
 	msgSudoElevado            struct{ err error }
 	msgDiagnostico            []diagnostico.Estado
 	msgProyectos              []proyectos.Proyecto
-	msgProyectoEliminado      struct{}
+	msgProyectoEliminado      struct{ err error }
 	msgError                  struct{ err error }
 )
 
-// generarCmd crea el proyecto en disco y lo registra si todo va bien.
+// generarCmd intenta descargar el icono del sitio, crea el proyecto en disco y
+// lo registra si todo va bien.
 func generarCmd(cfg configuracion.Configuracion) tea.Cmd {
 	return func() tea.Msg {
+		nota := ""
+		if img, err := icono.Descargar(context.Background(), cfg.URL); err != nil {
+			nota = "No se pudo obtener el icono del sitio; se usará el icono de Skynative. (" + err.Error() + ")"
+		} else {
+			cfg.Icono = img
+		}
+
 		res, err := generador.Generar(cfg)
 		if err != nil {
 			return msgGenerado{err: err}
@@ -58,15 +69,15 @@ func generarCmd(cfg configuracion.Configuracion) tea.Cmd {
 			URL:           cfg.URL,
 			Ruta:          res.Directorio,
 		})
-		return msgGenerado{res: res}
+		return msgGenerado{res: res, nota: nota}
 	}
 }
 
 // compilarCmd lanza la compilación de Tauri y escribe la salida en el canal.
-func compilarCmd(ctx context.Context, ruta string, canal chan string) tea.Cmd {
+func compilarCmd(ctx context.Context, ruta string, op compilador.Opciones, canal chan string) tea.Cmd {
 	return func() tea.Msg {
 		escritor := nuevoEscritorCanal(canal)
-		res, err := compilador.Compilar(ctx, ruta, compilador.Opciones{}, escritor)
+		res, err := compilador.Compilar(ctx, ruta, op, escritor)
 		escritor.cerrar()
 		close(canal)
 		return msgCompilado{res: res, err: err}
@@ -163,14 +174,49 @@ func proyectosCmd() tea.Cmd {
 	}
 }
 
-// eliminarProyectoCmd quita un proyecto del registro (no borra sus archivos).
+// eliminarProyectoCmd desinstala la aplicación del sistema (best-effort), borra
+// su carpeta y la quita del registro.
 func eliminarProyectoCmd(p proyectos.Proyecto) tea.Cmd {
 	return func() tea.Msg {
+		desinstalarAplicacion(p)
+		if err := os.RemoveAll(p.Ruta); err != nil {
+			return msgProyectoEliminado{err: fmt.Errorf("no se pudo borrar la carpeta %q: %w", p.Ruta, err)}
+		}
 		if err := proyectos.Eliminar(p.Ruta); err != nil {
-			return msgError{err: err}
+			return msgProyectoEliminado{err: err}
 		}
 		return msgProyectoEliminado{}
 	}
+}
+
+// eliminarTodoCmd borra todas las aplicaciones registradas: sus accesos del
+// sistema, sus carpetas y el propio registro.
+func eliminarTodoCmd(lista []proyectos.Proyecto) tea.Cmd {
+	return func() tea.Msg {
+		var fallos []string
+		for _, p := range lista {
+			desinstalarAplicacion(p)
+			if err := os.RemoveAll(p.Ruta); err != nil {
+				fallos = append(fallos, p.Ruta+": "+err.Error())
+			}
+		}
+		if err := proyectos.Limpiar(); err != nil {
+			return msgProyectoEliminado{err: err}
+		}
+		if len(fallos) > 0 {
+			return msgProyectoEliminado{err: fmt.Errorf("no se pudieron borrar algunas carpetas: %s", strings.Join(fallos, "; "))}
+		}
+		return msgProyectoEliminado{}
+	}
+}
+
+// desinstalarAplicacion intenta quitar del sistema la entrada instalada. Es
+// tolerante a errores: la eliminación de archivos es la operación principal.
+func desinstalarAplicacion(p proyectos.Proyecto) {
+	_, _ = instalador.Desinstalar(instalador.Opciones{
+		Nombre: p.Nombre,
+		Slug:   filepath.Base(p.Ruta),
+	})
 }
 
 // escritorCanal convierte las escrituras de un io.Writer en líneas de texto que

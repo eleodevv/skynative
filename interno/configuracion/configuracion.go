@@ -5,7 +5,10 @@
 // el esquema, el host y que no contenga caracteres de control.
 package configuracion
 
-import "strings"
+import (
+	"image"
+	"strings"
+)
 
 // Valores predeterminados y límites de validación.
 const (
@@ -43,6 +46,9 @@ type Configuracion struct {
 	Redimensionable bool
 	// DirectorioSalida es el directorio base donde se creará el proyecto.
 	DirectorioSalida string
+	// Icono es la imagen base para los iconos de la aplicación. Si es nil se
+	// usa el icono por defecto que dibuja el generador. No se serializa.
+	Icono image.Image
 }
 
 // Nueva devuelve una configuración con los valores predeterminados aplicados.

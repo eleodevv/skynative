@@ -137,8 +137,9 @@ func Generar(cfg configuracion.Configuracion) (Resultado, error) {
 	}
 	res.Archivos = append(res.Archivos, res.RutaTauriConf)
 
-	// Iconos por defecto (PNG, ICO e ICNS).
-	iconos, err := generarIconos(dirIconos)
+	// Iconos de la aplicación: el del sitio web si se proporcionó uno, o el
+	// dibujado por defecto (PNG, ICO e ICNS).
+	iconos, err := generarIconos(dirIconos, cfg.Icono)
 	if err != nil {
 		return Resultado{}, err
 	}

@@ -65,6 +65,90 @@ func Instalar(op Opciones) (Resultado, error) {
 	}
 }
 
+// Desinstalar elimina la entrada creada por Instalar en el sistema. Es
+// tolerante con lo que ya no exista y no devuelve error si no había nada que
+// borrar. Devuelve las rutas que se eliminaron.
+func Desinstalar(op Opciones) ([]string, error) {
+	switch runtime.GOOS {
+	case "linux":
+		return desinstalarLinux(op)
+	case "darwin":
+		return desinstalarDarwin(op)
+	case "windows":
+		return desinstalarWindows(op)
+	default:
+		return nil, nil
+	}
+}
+
+// desinstalarLinux borra la entrada .desktop y el icono instalados.
+func desinstalarLinux(op Opciones) ([]string, error) {
+	slug := limpiarSlug(op.Slug)
+	if slug == "" {
+		return nil, nil
+	}
+	base, err := directorioDatos(op.DirectorioDatos)
+	if err != nil {
+		return nil, err
+	}
+	var eliminados []string
+	borrar := func(ruta string) {
+		if err := os.Remove(ruta); err == nil {
+			eliminados = append(eliminados, ruta)
+		}
+	}
+	borrar(filepath.Join(base, "applications", slug+".desktop"))
+	borrar(filepath.Join(base, "icons", "hicolor", "256x256", "apps", slug+".png"))
+	octx := filepath.Join(base, "icons", "hicolor")
+	if _, err := os.Stat(octx); err == nil {
+		actualizarBaseDatos(filepath.Join(base, "applications"))
+	}
+	return eliminados, nil
+}
+
+// desinstalarDarwin borra el paquete .app copiado a ~/Applications.
+func desinstalarDarwin(op Opciones) ([]string, error) {
+	nombre := strings.TrimSpace(op.Nombre)
+	if nombre == "" {
+		return nil, nil
+	}
+	inicio, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	destino := filepath.Join(inicio, "Applications", filepath.Base(nombre)+".app")
+	if _, err := os.Stat(destino); err != nil {
+		return nil, nil
+	}
+	if err := os.RemoveAll(destino); err != nil {
+		return nil, fmt.Errorf("no se pudo eliminar %q: %w", destino, err)
+	}
+	return []string{destino}, nil
+}
+
+// desinstalarWindows borra el acceso directo del menú Inicio.
+func desinstalarWindows(op Opciones) ([]string, error) {
+	dir, err := directorioMenuInicio(op.DirectorioMenu)
+	if err != nil {
+		return nil, nil
+	}
+	nombre := nombreArchivoWindows(op.Nombre)
+	if nombre == "" {
+		nombre = limpiarSlug(op.Slug)
+	}
+	if nombre == "" {
+		return nil, nil
+	}
+	ruta := filepath.Join(dir, nombre+".lnk")
+	if _, err := os.Stat(ruta); err != nil {
+		return nil, nil
+	}
+	if err := os.Remove(ruta); err != nil {
+		return nil, fmt.Errorf("no se pudo eliminar %q: %w", ruta, err)
+	}
+	return []string{ruta}, nil
+}
+
 // instalarWindows crea un acceso directo en el menú Inicio mediante PowerShell.
 func instalarWindows(op Opciones) (Resultado, error) {
 	if strings.TrimSpace(op.Ejecutable) == "" {

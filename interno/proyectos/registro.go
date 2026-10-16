@@ -110,6 +110,15 @@ func Eliminar(rutaProyecto string) error {
 	return guardar(ruta, nueva)
 }
 
+// Limpiar vacía por completo el registro de proyectos.
+func Limpiar() error {
+	ruta, err := rutaRegistro()
+	if err != nil {
+		return err
+	}
+	return guardar(ruta, []Proyecto{})
+}
+
 // guardar serializa la lista en el archivo de registro.
 func guardar(ruta string, lista []Proyecto) error {
 	datos, err := json.MarshalIndent(lista, "", "  ")
